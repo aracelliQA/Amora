@@ -1,5 +1,5 @@
 import { BrowserRouter } from "react-router-dom";
-import { NavigationMenu } from "@shopify/app-bridge-react";
+import { Frame, Navigation } from "@shopify/polaris";
 import Routes from "./Routes";
 
 import {
@@ -7,6 +7,7 @@ import {
   QueryProvider,
   PolarisProvider,
 } from "./components";
+
 
 export default function App() {
   // Any .tsx or .jsx files in /pages will become a route
@@ -18,15 +19,30 @@ export default function App() {
       <BrowserRouter>
         <AppBridgeProvider>
           <QueryProvider>
-            <NavigationMenu
-              navigationLinks={[
-                {
-                  label: "Page name",
-                  destination: "/pagename",
-                },
-              ]}
-            />
+            <Frame
+              navigation={
+                <Navigation location="/">
+                  <Navigation.Section
+                    items={[
+                      {
+                        url: "/",
+                        label: "NFTs",
+                      },
+                      {
+                        url: "/campaigns",
+                        label: "Campaigns",
+                      },
+                      {
+                        url: "/settings",
+                        label: "Settings",
+                      },
+                    ]}
+                  />
+                </Navigation>
+              }
+            >
             <Routes pages={pages} />
+            </Frame> 
           </QueryProvider>
         </AppBridgeProvider>
       </BrowserRouter>
