@@ -18,6 +18,7 @@ export function AppFrame() {
                     {
                         url: "/",
                         label: "NFTs",
+                        exactMatch: true,
                     },
                     {
                         url: "/campaigns/campaignsList",

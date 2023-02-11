@@ -1,4 +1,4 @@
-import { useNavigate, TitleBar, Loading } from "@shopify/app-bridge-react";
+import { useNavigate, Loading } from "@shopify/app-bridge-react";
 import {
   Card,
   EmptyState,
@@ -44,7 +44,7 @@ export default function CampaignsList() {
           image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
         >
           <p>
-            Allow customers to scan codes and buy products using their phones.
+            Allow customers to unlock discounts or hidden products by claiming an NFT.
           </p>
         </EmptyState>
       </Card>
@@ -56,13 +56,6 @@ export default function CampaignsList() {
   */
   return (
     <Page>
-      <TitleBar
-        title="Campaigns"
-        primaryAction={{
-          content: "Create a campaign",
-          onAction: () => navigate("/campaigns/new"),
-        }}
-      />
       <Layout>
         <Layout.Section>
           {loadingMarkup}
