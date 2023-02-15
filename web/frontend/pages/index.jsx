@@ -41,10 +41,10 @@ export default function NFTList() {
             content: "Connect wallet",
             onAction: () => navigate("/campaigns/new"),
           }}
-          image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
+          image="https://cdn.shopify.com/s/files/1/0596/7167/5033/files/xpunks-empty-01.png?v=1676234476"
         >
           <p>
-            Connecting your wallet will enable you to create/view/delete XLS-20 NFT on XRPL.
+            Connecting your wallet will allow you to create/view/delete XLS-20 NFT on XRPL.
           </p>
         </EmptyState>
       </Card>
