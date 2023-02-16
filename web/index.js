@@ -5,7 +5,9 @@ import express from "express";
 import serveStatic from "serve-static";
 
 import shopify from "./shopify.js";
-import productCreator from "./product-creator.js";
+import createGate from "./api/create-gate.js";
+import retrieveGates from "./api/retrieve-gates.js";
+import deleteGate from "./api/delete-gate.js";
 import GDPRWebhookHandlers from "./gdpr.js";
 
 const PORT = parseInt(process.env.BACKEND_PORT || process.env.PORT, 10);
@@ -29,30 +31,51 @@ app.post(
   shopify.processWebhooks({ webhookHandlers: GDPRWebhookHandlers })
 );
 
+app.use(express.json());
+
 // All endpoints after this point will require an active session
 app.use("/api/*", shopify.validateAuthenticatedSession());
 
-app.use(express.json());
-
-app.get("/api/products/count", async (_req, res) => {
-  const countData = await shopify.api.rest.Product.count({
-    session: res.locals.shopify.session,
-  });
-  res.status(200).send(countData);
+app.get("/api/gates", async (_req, res) => {
+  try {
+    const response = await retrieveGates(res.locals.shopify.session);
+    res.status(200).send({ success: true, response });
+  } catch (e) {
+    console.error("Failed to process gates/get:", e.message);
+    res.status(500).send({ success: false, error: e.message });
+  }
 });
 
-app.get("/api/products/create", async (_req, res) => {
-  let status = 200;
-  let error = null;
+app.post("/api/gates", async (req, res) => {
+  const { name, discountType, discount, segment, productGids } = req.body;
 
   try {
-    await productCreator(res.locals.shopify.session);
+    await createGate({
+      session: res.locals.shopify.session,
+      name,
+      discountType,
+      discount,
+      segment,
+      productGids,
+    });
+    res.status(200).send({ success: true });
   } catch (e) {
-    console.log(`Failed to process products/create: ${e.message}`);
-    status = 500;
-    error = e.message;
+    console.error("Failed to process gates/create:", e.message);
+    res.status(500).send({ success: false, error: e.message });
   }
-  res.status(status).send({ success: status === 200, error });
+});
+
+app.delete("/api/gates/:id", async (req, res) => {
+  try {
+    await deleteGate({
+      session: res.locals.shopify.session,
+      gateConfigurationGid: decodeURIComponent(req.params.id),
+    });
+    res.status(200).send({ success: true });
+  } catch (e) {
+    console.error("Failed to process gates/delete:", e.message);
+    res.status(500).send({ success: false, error: e.message });
+  }
 });
 
 app.use(serveStatic(STATIC_PATH, { index: false }));
