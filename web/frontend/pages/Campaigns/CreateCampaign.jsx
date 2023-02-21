@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useLayoutEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Button,
@@ -12,11 +12,16 @@ import {
   Stack,
   TextContainer,
   TextField,
+  DatePicker,
+  Icon,
+  Popover,
+  Checkbox,
 } from "@shopify/polaris";
 import { ContextualSaveBar, Toast } from "@shopify/app-bridge-react";
 import { useField, useForm } from "@shopify/react-form";
-import { useAuthenticatedFetch } from "../hooks";
-import { TokengatesResourcePicker } from "../components/TokengatesResourcePicker";
+import { useAuthenticatedFetch } from "../../hooks";
+import { TokengatesResourcePicker } from "../../components/TokengatesResourcePicker";
+import { CalendarMajor } from '@shopify/polaris-icons';
 
 export default function CreateTokengate() {
   const fetch = useAuthenticatedFetch();
@@ -86,6 +91,65 @@ export default function CreateTokengate() {
     <Toast {...toastProps} onDismiss={() => setToastProps({ content: null })} />
   );
 
+  const [{month, year}, setInitialDate] = useState({month: new Date().getMonth(), year: new Date().getFullYear()});
+  const [selectedInitialDate, setSelectedInitialDate] = useState({
+    start: new Date(),
+    end: new Date(),
+  });
+
+  const initialEndDate = new Date();
+  const nextWeek = initialEndDate.getDate()+7;
+  const [{month2, year2}, setDate2] = useState({month2: new Date().getMonth(), year2: new Date().getFullYear()});
+  const [selectedDates2, setSelectedDates2] = useState({
+    start: new Date(initialEndDate.setDate(nextWeek)),
+    end: new Date(initialEndDate.setDate(nextWeek)),
+  });
+
+  const handleMonthChange = useCallback(
+    (month, year) => setInitialDate({month, year}),
+    [],
+  );
+
+  const handleMonthChange2 = useCallback(
+    (month2, year2) => setDate2({month2, year2}),
+    [],
+  );
+
+  const firstUpdate = useRef(true);
+  useLayoutEffect(() => {
+    if (firstUpdate.current) {
+      firstUpdate.current = false;
+      return;
+    }
+    togglePopoverActive();
+  }, [selectedInitialDate]);
+
+  const firstUpdate2 = useRef(true);
+  useLayoutEffect(() => {
+    if (firstUpdate2.current) {
+      firstUpdate2.current = false;
+      return;
+    }
+    togglePopover2Active();
+  }, [selectedDates2]);
+
+  const [popoverActive, setPopoverActive] = useState(false);
+
+  const togglePopoverActive = useCallback(
+    () => setPopoverActive((popoverActive) => !popoverActive),
+    [],
+  );
+
+  const [popover2Active, setPopover2Active] = useState(false);
+
+  const togglePopover2Active = useCallback(
+    () => setPopover2Active((popover2Active) => !popover2Active),
+    [],
+  );
+
+  const [checked, setChecked] = useState(true);
+  const handleChange = useCallback((newChecked) => setChecked(newChecked), []);
+
   return (
     <Page
       narrowWidth
@@ -93,11 +157,11 @@ export default function CreateTokengate() {
         {
           content: "Go back",
           onAction: () => {
-            navigate("/");
+            navigate("/campaigns/campaignsList");
           },
         },
       ]}
-      title="Create a new Tokengate"
+      title="Create a new Token-gated campaign"
     >
       <Layout>
         <Layout.Section>
@@ -127,6 +191,53 @@ export default function CreateTokengate() {
                         {...fields.name}
                         autoComplete="off"
                       />
+                      <Popover
+                        active = {popoverActive}
+                        activator={
+                          <TextField
+                            type="text"
+                            label="Start date"
+                            placeholder="Select a date ..."
+                            prefix={<Icon source={CalendarMajor} color="black"></Icon>}
+                            value={selectedInitialDate.start.toJSON().substring(0,10)}
+                            onFocus={togglePopoverActive}
+                          />
+                        }>
+                          <DatePicker
+                            month={month}
+                            year={year}
+                            onChange={setSelectedInitialDate}
+                            onMonthChange={handleMonthChange}
+                            selected={selectedInitialDate}
+                          />
+                      </Popover>
+                      <Checkbox
+                        label="Never end"
+                        checked={checked}
+                        onChange={handleChange}
+                      />
+                      {!checked &&
+                         <Popover
+                         active = {popover2Active}
+                         activator={
+                           <TextField
+                             type="text"
+                             label="End date"
+                             placeholder="Select a date ..."
+                             prefix={<Icon source={CalendarMajor} color="black"></Icon>}
+                             value={selectedDates2.start.toJSON().substring(0,10)}
+                             onFocus={togglePopover2Active}
+                           />
+                         }>
+                           <DatePicker
+                             month={month2}
+                             year={year2}
+                             onChange={setSelectedDates2}
+                             onMonthChange={handleMonthChange2}
+                             selected={selectedDates2}
+                           />
+                       </Popover>
+                      }
                     </TextContainer>
                   </Card.Section>
                   <Card.Section title="DISCOUNT PERK">

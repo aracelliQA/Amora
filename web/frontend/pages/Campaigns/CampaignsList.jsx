@@ -12,7 +12,7 @@ export default function HomePage() {
       primaryAction={{
         content: "Create tokengate",
         onAction: () => {
-          navigate("/createtokengate");
+          navigate("/campaigns/createcampaign");
         },
       }}
     >
