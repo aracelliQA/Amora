@@ -99,10 +99,11 @@ export default function CreateTokengate() {
 
   const initialEndDate = new Date();
   const nextWeek = initialEndDate.getDate()+7;
-  const [{month2, year2}, setDate2] = useState({month2: new Date().getMonth(), year2: new Date().getFullYear()});
-  const [selectedDates2, setSelectedDates2] = useState({
-    start: new Date(initialEndDate.setDate(nextWeek)),
-    end: new Date(initialEndDate.setDate(nextWeek)),
+  const nextWeekEndDate = new Date(initialEndDate.setDate(nextWeek));
+  const [{month2, year2}, setEndDate] = useState({month2: nextWeekEndDate.getMonth(), year2: nextWeekEndDate.getFullYear()});
+  const [selectedEndDate, setSelectedEndDate] = useState({
+    start: nextWeekEndDate,
+    end: nextWeekEndDate,
   });
 
   const handleMonthChange = useCallback(
@@ -111,7 +112,7 @@ export default function CreateTokengate() {
   );
 
   const handleMonthChange2 = useCallback(
-    (month2, year2) => setDate2({month2, year2}),
+    (month2, year2) => setEndDate({month2, year2}),
     [],
   );
 
@@ -131,7 +132,7 @@ export default function CreateTokengate() {
       return;
     }
     togglePopover2Active();
-  }, [selectedDates2]);
+  }, [selectedEndDate]);
 
   const [popoverActive, setPopoverActive] = useState(false);
 
@@ -209,6 +210,7 @@ export default function CreateTokengate() {
                             onChange={setSelectedInitialDate}
                             onMonthChange={handleMonthChange}
                             selected={selectedInitialDate}
+                            allowRange={false}
                           />
                       </Popover>
                       <Checkbox
@@ -225,16 +227,17 @@ export default function CreateTokengate() {
                              label="End date"
                              placeholder="Select a date ..."
                              prefix={<Icon source={CalendarMajor} color="black"></Icon>}
-                             value={selectedDates2.start.toJSON().substring(0,10)}
+                             value={selectedEndDate.start.toJSON().substring(0,10)}
                              onFocus={togglePopover2Active}
                            />
                          }>
                            <DatePicker
                              month={month2}
                              year={year2}
-                             onChange={setSelectedDates2}
+                             onChange={setSelectedEndDate}
                              onMonthChange={handleMonthChange2}
-                             selected={selectedDates2}
+                             selected={selectedEndDate}
+                             allowRange={false}
                            />
                        </Popover>
                       }
