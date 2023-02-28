@@ -4,7 +4,7 @@ import { myAppMetafieldNamespace, myAppId } from "./constants.js";
 import { createAutomaticDiscount } from "./create-discount.js";
 
 const CREATE_GATE_CONFIGURATION_MUTATION = `
-  mutation createGateConfiguration($name: String!, $requirements: String!, $reaction: String!) {
+  mutation createGateConfiguration($name: String!, $startDate: String, $endDate: String, $requirements: String!, $reaction: String!) {
     gateConfigurationCreate(input: {
         name: $name,
         metafields: [{
@@ -12,6 +12,18 @@ const CREATE_GATE_CONFIGURATION_MUTATION = `
           key: "requirements",
           type: "json",
           value: $requirements
+        },
+        {
+          namespace: "${myAppMetafieldNamespace}",
+          key: "startDate",
+          type: "single_line_text_field",
+          value: $startDate
+        },
+        {
+          namespace: "${myAppMetafieldNamespace}",
+          key: "endDate",
+          type: "single_line_text_field",
+          value: $endDate
         },
         {
           namespace: "${myAppMetafieldNamespace}",
@@ -128,6 +140,8 @@ query retrieveProducts ($queryString: String!, $first: Int!){
 export default async function createGate({
   session,
   name,
+  startDate,
+  endDate,
   discountType,
   discount,
   segment,
@@ -164,6 +178,8 @@ export default async function createGate({
         query: CREATE_GATE_CONFIGURATION_MUTATION,
         variables: {
           name,
+          startDate,
+          endDate,
           requirements: JSON.stringify(gateConfigurationRequirements),
           reaction: JSON.stringify(gateConfigurationReaction),
         },
@@ -171,6 +187,7 @@ export default async function createGate({
     });
     const gateConfiguration =
       createGateResponse.body.data.gateConfigurationCreate.gateConfiguration;
+    
     const gateConfigurationId = gateConfiguration.id;
 
     createAutomaticDiscount(client, gateConfiguration);

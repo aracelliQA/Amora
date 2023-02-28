@@ -77,6 +77,8 @@ export function TokengatesList() {
     </Stack>
   );
 
+  console.log(gatesData);
+
   return (
     <Card>
       <IndexTable

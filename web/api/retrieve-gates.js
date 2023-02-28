@@ -18,6 +18,14 @@ const GATES_QUERY = `
           key: "reaction") {
             value
         }
+        startDate: metafield(namespace: "${myAppMetafieldNamespace}",
+          key: "startDate") {
+            value
+        }
+        endDate: metafield(namespace: "${myAppMetafieldNamespace}",
+          key: "endDate") {
+            value
+        }
         subjectBindings(first: $first) {
           nodes {
             id

@@ -28,71 +28,8 @@ export default function CreateTokengate() {
   const navigate = useNavigate();
   const [toastProps, setToastProps] = useState({ content: null });
 
-  const fieldsDefinition = {
-    name: useField({
-      value: undefined,
-      validates: (name) => !name && "Name cannot be empty",
-    }),
-    discountType: useField("percentage"),
-    discount: useField({
-      value: undefined,
-      validates: (discount) => !discount && "Discount cannot be empty",
-    }),
-    segment: useField({
-      value: undefined,
-      validates: (segment) => !segment && "Segment cannot be empty",
-    }),
-    products: useField([]),
-  };
-
-  const { fields, submit, submitting, dirty, reset, makeClean } = useForm({
-    fields: fieldsDefinition,
-    onSubmit: async (formData) => {
-      const { discountType, discount, name, products, segment } = formData;
-
-      const productGids = products.map((product) => product.id);
-
-      const response = await fetch("/api/gates", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          discountType,
-          discount,
-          name,
-          productGids,
-          segment: segment.split(","),
-        }),
-      });
-
-      if (response.ok) {
-        setToastProps({ content: "Tokengate created" });
-        makeClean();
-        navigate("/");
-      } else {
-        setToastProps({
-          content: "There was an error creating a tokengate",
-          error: true,
-        });
-      }
-    },
-  });
-
-  const handleDiscountTypeButtonClick = useCallback(() => {
-    if (fields.discountType.value === "percentage") {
-      fields.discountType.onChange("amount");
-    } else {
-      fields.discountType.onChange("percentage");
-    }
-  }, [fields.discountType]);
-
-  const toastMarkup = toastProps.content && (
-    <Toast {...toastProps} onDismiss={() => setToastProps({ content: null })} />
-  );
-
-  const [{month, year}, setInitialDate] = useState({month: new Date().getMonth(), year: new Date().getFullYear()});
-  const [selectedInitialDate, setSelectedInitialDate] = useState({
+  const [{month, year}, setStartDate] = useState({month: new Date().getMonth(), year: new Date().getFullYear()});
+  const [selectedStartDate, setselectedStartDate] = useState({
     start: new Date(),
     end: new Date(),
   });
@@ -107,7 +44,7 @@ export default function CreateTokengate() {
   });
 
   const handleMonthChange = useCallback(
-    (month, year) => setInitialDate({month, year}),
+    (month, year) => setStartDate({month, year}),
     [],
   );
 
@@ -123,7 +60,7 @@ export default function CreateTokengate() {
       return;
     }
     togglePopoverActive();
-  }, [selectedInitialDate]);
+  }, [selectedStartDate]);
 
   const firstUpdate2 = useRef(true);
   useLayoutEffect(() => {
@@ -150,6 +87,73 @@ export default function CreateTokengate() {
 
   const [checked, setChecked] = useState(true);
   const handleChange = useCallback((newChecked) => setChecked(newChecked), []);
+
+  const fieldsDefinition = {
+    name: useField({
+      value: undefined,
+      validates: (name) => !name && "Name cannot be empty",
+    }),
+    startDate: useField(selectedStartDate.start.toJSON().substring(0,10)),
+    endDate: useField(checked ? "" :selectedEndDate.start.toJSON().substring(0,10)),
+    discountType: useField("percentage"),
+    discount: useField({
+      value: undefined,
+      validates: (discount) => !discount && "Discount cannot be empty",
+    }),
+    segment: useField({
+      value: undefined,
+      validates: (segment) => !segment && "Segment cannot be empty",
+    }),
+    products: useField([]),
+  };
+
+  const { fields, submit, submitting, dirty, reset, makeClean } = useForm({
+    fields: fieldsDefinition,
+    onSubmit: async (formData) => {
+      const { startDate, endDate, discountType, discount, name, products, segment } = formData;
+
+      const productGids = products.map((product) => product.id);
+
+      const response = await fetch("/api/gates", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          startDate,
+          endDate,
+          discountType,
+          discount,
+          productGids,
+          segment: segment.split(","),
+        }),
+      });
+
+      if (response.ok) {
+        setToastProps({ content: "Tokengate campaign created" });
+        makeClean();
+        navigate("/campaigns/campaignsList");
+      } else {
+        setToastProps({
+          content: "There was an error creating the tokengate campaign",
+          error: true,
+        });
+      }
+    },
+  });
+
+  const handleDiscountTypeButtonClick = useCallback(() => {
+    if (fields.discountType.value === "percentage") {
+      fields.discountType.onChange("amount");
+    } else {
+      fields.discountType.onChange("percentage");
+    }
+  }, [fields.discountType]);
+
+  const toastMarkup = toastProps.content && (
+    <Toast {...toastProps} onDismiss={() => setToastProps({ content: null })} />
+  );
 
   return (
     <Page
@@ -200,16 +204,16 @@ export default function CreateTokengate() {
                             label="Start date"
                             placeholder="Select a date ..."
                             prefix={<Icon source={CalendarMajor} color="black"></Icon>}
-                            value={selectedInitialDate.start.toJSON().substring(0,10)}
                             onFocus={togglePopoverActive}
+                            {...fields.startDate}
                           />
                         }>
                           <DatePicker
                             month={month}
                             year={year}
-                            onChange={setSelectedInitialDate}
+                            onChange={setselectedStartDate}
                             onMonthChange={handleMonthChange}
-                            selected={selectedInitialDate}
+                            selected={selectedStartDate}
                             allowRange={false}
                           />
                       </Popover>
@@ -227,8 +231,8 @@ export default function CreateTokengate() {
                              label="End date"
                              placeholder="Select a date ..."
                              prefix={<Icon source={CalendarMajor} color="black"></Icon>}
-                             value={selectedEndDate.start.toJSON().substring(0,10)}
                              onFocus={togglePopover2Active}
+                             {...fields.endDate}
                            />
                          }>
                            <DatePicker
