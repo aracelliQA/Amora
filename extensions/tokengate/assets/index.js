@@ -17,6 +17,7 @@ function _mergeNamespaces(n2, m2) {
   }
   return Object.freeze(Object.defineProperty(n2, Symbol.toStringTag, { value: "Module" }));
 }
+var commonjsGlobal = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : typeof globalThis !== "undefined" ? globalThis : typeof self !== "undefined" ? self : {};
 function getDefaultExportFromCjs(x2) {
   return x2 && x2.__esModule && Object.prototype.hasOwnProperty.call(x2, "default") ? x2["default"] : x2;
 }
@@ -9007,11 +9008,11 @@ function _createClass(Constructor, protoProps, staticProps) {
   });
   return Constructor;
 }
-function _assertThisInitialized(self) {
-  if (self === void 0) {
+function _assertThisInitialized(self2) {
+  if (self2 === void 0) {
     throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
   }
-  return self;
+  return self2;
 }
 function _setPrototypeOf(o, p2) {
   _setPrototypeOf = Object.setPrototypeOf ? Object.setPrototypeOf.bind() : function _setPrototypeOf2(o2, p3) {
@@ -9037,13 +9038,13 @@ function _inherits(subClass, superClass) {
   if (superClass)
     _setPrototypeOf(subClass, superClass);
 }
-function _possibleConstructorReturn(self, call) {
+function _possibleConstructorReturn(self2, call) {
   if (call && (_typeof(call) === "object" || typeof call === "function")) {
     return call;
   } else if (call !== void 0) {
     throw new TypeError("Derived constructors may only return object or undefined");
   }
-  return _assertThisInitialized(self);
+  return _assertThisInitialized(self2);
 }
 function _getPrototypeOf(o) {
   _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf.bind() : function _getPrototypeOf2(o2) {
@@ -11123,7 +11124,7 @@ var Connector = function(_EventEmitter) {
     }
   }, {
     key: "read",
-    value: function read(lng, ns, fcName) {
+    value: function read2(lng, ns, fcName) {
       var _this3 = this;
       var tried = arguments.length > 3 && arguments[3] !== void 0 ? arguments[3] : 0;
       var wait = arguments.length > 4 && arguments[4] !== void 0 ? arguments[4] : this.retryTimeout;
@@ -14688,6 +14689,1208 @@ var newStyled = createStyled.bind();
 tags.forEach(function(tagName) {
   newStyled[tagName] = newStyled(tagName);
 });
+var CartAjaxApiError = class extends Error {
+  constructor(message) {
+    super(message);
+  }
+};
+var CartAjaxApiNotSupportedError = class extends CartAjaxApiError {
+  constructor() {
+    super(
+      'Online storefront not detected. Cart AJAX API is not supported. Set orderAttributionMode to "disabled" if you are not using Online storefront.'
+    );
+  }
+};
+function isShopifyStore(win) {
+  return win && win.Shopify;
+}
+function getShopifyRootRoute() {
+  if (!isShopifyStore(window))
+    return "";
+  return window.Shopify.routes.root;
+}
+var AJAX_API_UPDATE_URL = getUpdateUrl();
+async function read() {
+  if (!isCartAjaxApiSupported()) {
+    return Promise.reject(new CartAjaxApiNotSupportedError());
+  }
+  const response = await fetch(`${getCartAjaxApiRoutePrefix()}cart.js`);
+  const json = await response.json();
+  if (!isCartAjaxResponse(json)) {
+    return Promise.reject(new CartAjaxApiError("invalid cart ajax response"));
+  }
+  const { _shopify_gate_context: gateContextJson } = json.attributes;
+  if (gateContextJson === void 0)
+    return gateContextJson;
+  return JSON.parse(gateContextJson);
+}
+function isCartAjaxResponse(response) {
+  if (!response)
+    return false;
+  if (!response.attributes)
+    return false;
+  if (!response.token)
+    return false;
+  if (typeof response.attributes !== "object")
+    return false;
+  return true;
+}
+async function write(data, options) {
+  const attributes = await getAttributes(
+    data,
+    options.shopifyGateContextGenerator
+  );
+  if (!isCartAjaxApiSupported()) {
+    return Promise.reject(new CartAjaxApiNotSupportedError());
+  }
+  const response = await fetch(AJAX_API_UPDATE_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      attributes
+    })
+  });
+  const json = await response.json();
+  return {
+    raw: json
+  };
+}
+function getUpdateUrl() {
+  return `${getCartAjaxApiRoutePrefix()}cart/update.js`;
+}
+function getCartAjaxApiRoutePrefix() {
+  return getShopifyRootRoute();
+}
+function isCartAjaxApiSupported() {
+  return isShopifyStore(window);
+}
+async function getAttributes(gateContextInput, gateContextGenerator) {
+  const shopify_gate_context = await gateContextGenerator(gateContextInput);
+  const defaultAttributes = {
+    "Wallet Address": gateContextInput.walletAddress
+  };
+  if (typeof shopify_gate_context !== "undefined") {
+    return {
+      ...defaultAttributes,
+      _shopify_gate_context: JSON.stringify(shopify_gate_context)
+    };
+  }
+  return defaultAttributes;
+}
+function getGateContextCartAjaxClient(options) {
+  return {
+    write: (data) => write(data, options),
+    read
+  };
+}
+function getGateContextClient(options) {
+  if (options.backingStore === "ajaxApi") {
+    return getGateContextCartAjaxClient(options);
+  }
+  throw new Error(`Unsupported backing store: ${options.backingStore}`);
+}
+const host = "https://b57c-45-188-121-110.sa.ngrok.io";
+const gateContextClient = getGateContextClient({
+  backingStore: "ajaxApi",
+  shopifyGateContextGenerator: async (data) => {
+    try {
+      const existing = await gateContextClient.read();
+      return mergeGateContext(existing, data);
+    } catch (e2) {
+      return data;
+    }
+    function mergeGateContext(existing, add) {
+      const entriesById = existing.reduce((acc, item) => {
+        acc[item.id] = item;
+        return acc;
+      }, {});
+      add.forEach((item) => entriesById[item.id] = item);
+      return Object.keys(entriesById).map((id2) => entriesById[id2]);
+    }
+  }
+});
+const useEvaluateGate = () => {
+  const gate = getGate$1();
+  const [gateEvaluation, setGateEvaluation] = react.exports.useState();
+  const productId = getProductId();
+  const evaluateGate = react.exports.useCallback(
+    async (address) => {
+      if (address) {
+        const response = await fetch(`${host}/public/gateEvaluation`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"
+          },
+          body: JSON.stringify({
+            productId,
+            productGid: `gid://shopify/Product/${productId}`,
+            gateConfigurationGid: `gid://shopify/GateConfiguration/${gate.id}`,
+            shopDomain: getShopDomain(),
+            address
+          })
+        });
+        const json = await response.json();
+        console.log({ json });
+        setGateEvaluation(json);
+        gateContextClient.write(json.gateContext).catch((_e2) => console.error("failed to write to gate context"));
+      } else {
+        setGateEvaluation({});
+      }
+    },
+    [setGateEvaluation, gate]
+  );
+  const { unlockingTokens, isLocked } = react.exports.useMemo(() => {
+    const { unlockingTokens: unlockingTokens2 } = gateEvaluation || {};
+    const isLocked2 = !Boolean(unlockingTokens2 == null ? void 0 : unlockingTokens2.length);
+    return {
+      unlockingTokens: unlockingTokens2,
+      isLocked: isLocked2
+    };
+  }, [gateEvaluation]);
+  return {
+    evaluateGate,
+    gateEvaluation,
+    unlockingTokens,
+    isLocked
+  };
+};
+const getGate$1 = () => {
+  var _a;
+  return ((_a = window.myAppGates) == null ? void 0 : _a[0]) || {};
+};
+function getShopDomain() {
+  return window.Shopify.shop;
+}
+function getProductId() {
+  return document.getElementById("amora").dataset.product_id;
+}
+var dist = {};
+var useWebsocket = {};
+var constants = {};
+(function(exports) {
+  Object.defineProperty(exports, "__esModule", { value: true });
+  exports.isEventSourceSupported = exports.isReactNative = exports.ReadyState = exports.UNPARSABLE_JSON_OBJECT = exports.DEFAULT_RECONNECT_INTERVAL_MS = exports.DEFAULT_RECONNECT_LIMIT = exports.SOCKET_IO_PING_CODE = exports.SOCKET_IO_PATH = exports.SOCKET_IO_PING_INTERVAL = exports.DEFAULT_EVENT_SOURCE_OPTIONS = exports.EMPTY_EVENT_HANDLERS = exports.DEFAULT_OPTIONS = void 0;
+  var MILLISECONDS = 1;
+  var SECONDS = 1e3 * MILLISECONDS;
+  exports.DEFAULT_OPTIONS = {};
+  exports.EMPTY_EVENT_HANDLERS = {};
+  exports.DEFAULT_EVENT_SOURCE_OPTIONS = {
+    withCredentials: false,
+    events: exports.EMPTY_EVENT_HANDLERS
+  };
+  exports.SOCKET_IO_PING_INTERVAL = 25 * SECONDS;
+  exports.SOCKET_IO_PATH = "/socket.io/?EIO=3&transport=websocket";
+  exports.SOCKET_IO_PING_CODE = "2";
+  exports.DEFAULT_RECONNECT_LIMIT = 20;
+  exports.DEFAULT_RECONNECT_INTERVAL_MS = 5e3;
+  exports.UNPARSABLE_JSON_OBJECT = {};
+  (function(ReadyState) {
+    ReadyState[ReadyState["UNINSTANTIATED"] = -1] = "UNINSTANTIATED";
+    ReadyState[ReadyState["CONNECTING"] = 0] = "CONNECTING";
+    ReadyState[ReadyState["OPEN"] = 1] = "OPEN";
+    ReadyState[ReadyState["CLOSING"] = 2] = "CLOSING";
+    ReadyState[ReadyState["CLOSED"] = 3] = "CLOSED";
+  })(exports.ReadyState || (exports.ReadyState = {}));
+  var eventSourceSupported = function() {
+    try {
+      return "EventSource" in globalThis;
+    } catch (e2) {
+      return false;
+    }
+  };
+  exports.isReactNative = typeof navigator !== "undefined" && navigator.product === "ReactNative";
+  exports.isEventSourceSupported = !exports.isReactNative && eventSourceSupported();
+})(constants);
+var createOrJoin = {};
+var globals = {};
+(function(exports) {
+  Object.defineProperty(exports, "__esModule", { value: true });
+  exports.resetWebSockets = exports.sharedWebSockets = void 0;
+  exports.sharedWebSockets = {};
+  var resetWebSockets = function(url) {
+    if (url && exports.sharedWebSockets.hasOwnProperty(url)) {
+      delete exports.sharedWebSockets[url];
+    } else {
+      for (var url_1 in exports.sharedWebSockets) {
+        if (exports.sharedWebSockets.hasOwnProperty(url_1)) {
+          delete exports.sharedWebSockets[url_1];
+        }
+      }
+    }
+  };
+  exports.resetWebSockets = resetWebSockets;
+})(globals);
+var attachListener = {};
+var socketIo = {};
+Object.defineProperty(socketIo, "__esModule", { value: true });
+socketIo.setUpSocketIOPing = socketIo.appendQueryParams = socketIo.parseSocketIOUrl = void 0;
+var constants_1$6 = constants;
+var parseSocketIOUrl = function(url) {
+  if (url) {
+    var isSecure = /^https|wss/.test(url);
+    var strippedProtocol = url.replace(/^(https?|wss?)(:\/\/)?/, "");
+    var removedFinalBackSlack = strippedProtocol.replace(/\/$/, "");
+    var protocol = isSecure ? "wss" : "ws";
+    return "".concat(protocol, "://").concat(removedFinalBackSlack).concat(constants_1$6.SOCKET_IO_PATH);
+  } else if (url === "") {
+    var isSecure = /^https/.test(window.location.protocol);
+    var protocol = isSecure ? "wss" : "ws";
+    var port = window.location.port ? ":".concat(window.location.port) : "";
+    return "".concat(protocol, "://").concat(window.location.hostname).concat(port).concat(constants_1$6.SOCKET_IO_PATH);
+  }
+  return url;
+};
+socketIo.parseSocketIOUrl = parseSocketIOUrl;
+var appendQueryParams = function(url, params) {
+  if (params === void 0) {
+    params = {};
+  }
+  var hasParamsRegex = /\?([\w]+=[\w]+)/;
+  var alreadyHasParams = hasParamsRegex.test(url);
+  var stringified = "".concat(Object.entries(params).reduce(function(next2, _a) {
+    var key = _a[0], value = _a[1];
+    return next2 + "".concat(key, "=").concat(value, "&");
+  }, "").slice(0, -1));
+  return "".concat(url).concat(alreadyHasParams ? "&" : "?").concat(stringified);
+};
+socketIo.appendQueryParams = appendQueryParams;
+var setUpSocketIOPing = function(sendMessage, interval) {
+  if (interval === void 0) {
+    interval = constants_1$6.SOCKET_IO_PING_INTERVAL;
+  }
+  var ping = function() {
+    return sendMessage(constants_1$6.SOCKET_IO_PING_CODE);
+  };
+  return window.setInterval(ping, interval);
+};
+socketIo.setUpSocketIOPing = setUpSocketIOPing;
+var util = {};
+var manageSubscribers = {};
+(function(exports) {
+  Object.defineProperty(exports, "__esModule", { value: true });
+  exports.resetSubscribers = exports.removeSubscriber = exports.addSubscriber = exports.hasSubscribers = exports.getSubscribers = void 0;
+  var subscribers = {};
+  var EMPTY_LIST = [];
+  var getSubscribers = function(url) {
+    if ((0, exports.hasSubscribers)(url)) {
+      return Array.from(subscribers[url]);
+    }
+    return EMPTY_LIST;
+  };
+  exports.getSubscribers = getSubscribers;
+  var hasSubscribers = function(url) {
+    var _a;
+    return ((_a = subscribers[url]) === null || _a === void 0 ? void 0 : _a.size) > 0;
+  };
+  exports.hasSubscribers = hasSubscribers;
+  var addSubscriber = function(url, subscriber) {
+    subscribers[url] = subscribers[url] || /* @__PURE__ */ new Set();
+    subscribers[url].add(subscriber);
+  };
+  exports.addSubscriber = addSubscriber;
+  var removeSubscriber = function(url, subscriber) {
+    subscribers[url].delete(subscriber);
+  };
+  exports.removeSubscriber = removeSubscriber;
+  var resetSubscribers = function(url) {
+    if (url && subscribers.hasOwnProperty(url)) {
+      delete subscribers[url];
+    } else {
+      for (var url_1 in subscribers) {
+        if (subscribers.hasOwnProperty(url_1)) {
+          delete subscribers[url_1];
+        }
+      }
+    }
+  };
+  exports.resetSubscribers = resetSubscribers;
+})(manageSubscribers);
+Object.defineProperty(util, "__esModule", { value: true });
+util.resetGlobalState = util.assertIsWebSocket = void 0;
+var globals_1$2 = globals;
+var manage_subscribers_1$2 = manageSubscribers;
+function assertIsWebSocket(webSocketInstance, skip) {
+  if (!skip && webSocketInstance instanceof WebSocket === false)
+    throw new Error("");
+}
+util.assertIsWebSocket = assertIsWebSocket;
+function resetGlobalState(url) {
+  (0, manage_subscribers_1$2.resetSubscribers)(url);
+  (0, globals_1$2.resetWebSockets)(url);
+}
+util.resetGlobalState = resetGlobalState;
+var __assign$4 = commonjsGlobal && commonjsGlobal.__assign || function() {
+  __assign$4 = Object.assign || function(t2) {
+    for (var s, i = 1, n2 = arguments.length; i < n2; i++) {
+      s = arguments[i];
+      for (var p2 in s)
+        if (Object.prototype.hasOwnProperty.call(s, p2))
+          t2[p2] = s[p2];
+    }
+    return t2;
+  };
+  return __assign$4.apply(this, arguments);
+};
+Object.defineProperty(attachListener, "__esModule", { value: true });
+attachListener.attachListeners = void 0;
+var socket_io_1$2 = socketIo;
+var constants_1$5 = constants;
+var util_1$1 = util;
+var bindMessageHandler$1 = function(webSocketInstance, optionsRef, setLastMessage) {
+  webSocketInstance.onmessage = function(message) {
+    optionsRef.current.onMessage && optionsRef.current.onMessage(message);
+    if (typeof optionsRef.current.filter === "function" && optionsRef.current.filter(message) !== true) {
+      return;
+    }
+    setLastMessage(message);
+  };
+};
+var bindOpenHandler$1 = function(webSocketInstance, optionsRef, setReadyState, reconnectCount) {
+  webSocketInstance.onopen = function(event) {
+    optionsRef.current.onOpen && optionsRef.current.onOpen(event);
+    reconnectCount.current = 0;
+    setReadyState(constants_1$5.ReadyState.OPEN);
+  };
+};
+var bindCloseHandler$1 = function(webSocketInstance, optionsRef, setReadyState, reconnect, reconnectCount) {
+  if (constants_1$5.isEventSourceSupported && webSocketInstance instanceof EventSource) {
+    return function() {
+    };
+  }
+  (0, util_1$1.assertIsWebSocket)(webSocketInstance, optionsRef.current.skipAssert);
+  var reconnectTimeout;
+  webSocketInstance.onclose = function(event) {
+    var _a;
+    optionsRef.current.onClose && optionsRef.current.onClose(event);
+    setReadyState(constants_1$5.ReadyState.CLOSED);
+    if (optionsRef.current.shouldReconnect && optionsRef.current.shouldReconnect(event)) {
+      var reconnectAttempts = (_a = optionsRef.current.reconnectAttempts) !== null && _a !== void 0 ? _a : constants_1$5.DEFAULT_RECONNECT_LIMIT;
+      if (reconnectCount.current < reconnectAttempts) {
+        var nextReconnectInterval = typeof optionsRef.current.reconnectInterval === "function" ? optionsRef.current.reconnectInterval(reconnectCount.current) : optionsRef.current.reconnectInterval;
+        reconnectTimeout = window.setTimeout(function() {
+          reconnectCount.current++;
+          reconnect();
+        }, nextReconnectInterval !== null && nextReconnectInterval !== void 0 ? nextReconnectInterval : constants_1$5.DEFAULT_RECONNECT_INTERVAL_MS);
+      } else {
+        optionsRef.current.onReconnectStop && optionsRef.current.onReconnectStop(reconnectAttempts);
+        console.warn("Max reconnect attempts of ".concat(reconnectAttempts, " exceeded"));
+      }
+    }
+  };
+  return function() {
+    return reconnectTimeout && window.clearTimeout(reconnectTimeout);
+  };
+};
+var bindErrorHandler$1 = function(webSocketInstance, optionsRef, setReadyState, reconnect, reconnectCount) {
+  var reconnectTimeout;
+  webSocketInstance.onerror = function(error2) {
+    var _a;
+    optionsRef.current.onError && optionsRef.current.onError(error2);
+    if (constants_1$5.isEventSourceSupported && webSocketInstance instanceof EventSource) {
+      optionsRef.current.onClose && optionsRef.current.onClose(__assign$4(__assign$4({}, error2), { code: 1006, reason: "An error occurred with the EventSource: ".concat(error2), wasClean: false }));
+      setReadyState(constants_1$5.ReadyState.CLOSED);
+      webSocketInstance.close();
+    }
+    if (optionsRef.current.retryOnError) {
+      if (reconnectCount.current < ((_a = optionsRef.current.reconnectAttempts) !== null && _a !== void 0 ? _a : constants_1$5.DEFAULT_RECONNECT_LIMIT)) {
+        var nextReconnectInterval = typeof optionsRef.current.reconnectInterval === "function" ? optionsRef.current.reconnectInterval(reconnectCount.current) : optionsRef.current.reconnectInterval;
+        reconnectTimeout = window.setTimeout(function() {
+          reconnectCount.current++;
+          reconnect();
+        }, nextReconnectInterval !== null && nextReconnectInterval !== void 0 ? nextReconnectInterval : constants_1$5.DEFAULT_RECONNECT_INTERVAL_MS);
+      } else {
+        optionsRef.current.onReconnectStop && optionsRef.current.onReconnectStop(optionsRef.current.reconnectAttempts);
+        console.warn("Max reconnect attempts of ".concat(optionsRef.current.reconnectAttempts, " exceeded"));
+      }
+    }
+  };
+  return function() {
+    return reconnectTimeout && window.clearTimeout(reconnectTimeout);
+  };
+};
+var attachListeners = function(webSocketInstance, setters, optionsRef, reconnect, reconnectCount, sendMessage) {
+  var setLastMessage = setters.setLastMessage, setReadyState = setters.setReadyState;
+  var interval;
+  var cancelReconnectOnClose;
+  var cancelReconnectOnError;
+  if (optionsRef.current.fromSocketIO) {
+    interval = (0, socket_io_1$2.setUpSocketIOPing)(sendMessage);
+  }
+  bindMessageHandler$1(webSocketInstance, optionsRef, setLastMessage);
+  bindOpenHandler$1(webSocketInstance, optionsRef, setReadyState, reconnectCount);
+  cancelReconnectOnClose = bindCloseHandler$1(webSocketInstance, optionsRef, setReadyState, reconnect, reconnectCount);
+  cancelReconnectOnError = bindErrorHandler$1(webSocketInstance, optionsRef, setReadyState, reconnect, reconnectCount);
+  return function() {
+    setReadyState(constants_1$5.ReadyState.CLOSING);
+    cancelReconnectOnClose();
+    cancelReconnectOnError();
+    webSocketInstance.close();
+    if (interval)
+      clearInterval(interval);
+  };
+};
+attachListener.attachListeners = attachListeners;
+var attachSharedListeners$1 = {};
+var __assign$3 = commonjsGlobal && commonjsGlobal.__assign || function() {
+  __assign$3 = Object.assign || function(t2) {
+    for (var s, i = 1, n2 = arguments.length; i < n2; i++) {
+      s = arguments[i];
+      for (var p2 in s)
+        if (Object.prototype.hasOwnProperty.call(s, p2))
+          t2[p2] = s[p2];
+    }
+    return t2;
+  };
+  return __assign$3.apply(this, arguments);
+};
+Object.defineProperty(attachSharedListeners$1, "__esModule", { value: true });
+attachSharedListeners$1.attachSharedListeners = void 0;
+var globals_1$1 = globals;
+var constants_1$4 = constants;
+var manage_subscribers_1$1 = manageSubscribers;
+var socket_io_1$1 = socketIo;
+var bindMessageHandler = function(webSocketInstance, url) {
+  webSocketInstance.onmessage = function(message) {
+    (0, manage_subscribers_1$1.getSubscribers)(url).forEach(function(subscriber) {
+      if (subscriber.optionsRef.current.onMessage) {
+        subscriber.optionsRef.current.onMessage(message);
+      }
+      if (typeof subscriber.optionsRef.current.filter === "function" && subscriber.optionsRef.current.filter(message) !== true) {
+        return;
+      }
+      subscriber.setLastMessage(message);
+    });
+  };
+};
+var bindOpenHandler = function(webSocketInstance, url) {
+  webSocketInstance.onopen = function(event) {
+    (0, manage_subscribers_1$1.getSubscribers)(url).forEach(function(subscriber) {
+      subscriber.reconnectCount.current = 0;
+      if (subscriber.optionsRef.current.onOpen) {
+        subscriber.optionsRef.current.onOpen(event);
+      }
+      subscriber.setReadyState(constants_1$4.ReadyState.OPEN);
+    });
+  };
+};
+var bindCloseHandler = function(webSocketInstance, url) {
+  if (webSocketInstance instanceof WebSocket) {
+    webSocketInstance.onclose = function(event) {
+      (0, manage_subscribers_1$1.getSubscribers)(url).forEach(function(subscriber) {
+        if (subscriber.optionsRef.current.onClose) {
+          subscriber.optionsRef.current.onClose(event);
+        }
+        subscriber.setReadyState(constants_1$4.ReadyState.CLOSED);
+      });
+      delete globals_1$1.sharedWebSockets[url];
+      (0, manage_subscribers_1$1.getSubscribers)(url).forEach(function(subscriber) {
+        var _a;
+        if (subscriber.optionsRef.current.shouldReconnect && subscriber.optionsRef.current.shouldReconnect(event)) {
+          var reconnectAttempts = (_a = subscriber.optionsRef.current.reconnectAttempts) !== null && _a !== void 0 ? _a : constants_1$4.DEFAULT_RECONNECT_LIMIT;
+          if (subscriber.reconnectCount.current < reconnectAttempts) {
+            var nextReconnectInterval = typeof subscriber.optionsRef.current.reconnectInterval === "function" ? subscriber.optionsRef.current.reconnectInterval(subscriber.reconnectCount.current) : subscriber.optionsRef.current.reconnectInterval;
+            setTimeout(function() {
+              subscriber.reconnectCount.current++;
+              subscriber.reconnect.current();
+            }, nextReconnectInterval !== null && nextReconnectInterval !== void 0 ? nextReconnectInterval : constants_1$4.DEFAULT_RECONNECT_INTERVAL_MS);
+          } else {
+            subscriber.optionsRef.current.onReconnectStop && subscriber.optionsRef.current.onReconnectStop(subscriber.optionsRef.current.reconnectAttempts);
+            console.warn("Max reconnect attempts of ".concat(reconnectAttempts, " exceeded"));
+          }
+        }
+      });
+    };
+  }
+};
+var bindErrorHandler = function(webSocketInstance, url) {
+  webSocketInstance.onerror = function(error2) {
+    (0, manage_subscribers_1$1.getSubscribers)(url).forEach(function(subscriber) {
+      if (subscriber.optionsRef.current.onError) {
+        subscriber.optionsRef.current.onError(error2);
+      }
+      if (constants_1$4.isEventSourceSupported && webSocketInstance instanceof EventSource) {
+        subscriber.optionsRef.current.onClose && subscriber.optionsRef.current.onClose(__assign$3(__assign$3({}, error2), { code: 1006, reason: "An error occurred with the EventSource: ".concat(error2), wasClean: false }));
+        subscriber.setReadyState(constants_1$4.ReadyState.CLOSED);
+      }
+    });
+    if (constants_1$4.isEventSourceSupported && webSocketInstance instanceof EventSource) {
+      webSocketInstance.close();
+    }
+  };
+};
+var attachSharedListeners = function(webSocketInstance, url, optionsRef, sendMessage) {
+  var interval;
+  if (optionsRef.current.fromSocketIO) {
+    interval = (0, socket_io_1$1.setUpSocketIOPing)(sendMessage);
+  }
+  bindMessageHandler(webSocketInstance, url);
+  bindCloseHandler(webSocketInstance, url);
+  bindOpenHandler(webSocketInstance, url);
+  bindErrorHandler(webSocketInstance, url);
+  return function() {
+    if (interval)
+      clearInterval(interval);
+  };
+};
+attachSharedListeners$1.attachSharedListeners = attachSharedListeners;
+Object.defineProperty(createOrJoin, "__esModule", { value: true });
+createOrJoin.createOrJoinSocket = void 0;
+var globals_1 = globals;
+var constants_1$3 = constants;
+var attach_listener_1 = attachListener;
+var attach_shared_listeners_1 = attachSharedListeners$1;
+var manage_subscribers_1 = manageSubscribers;
+var cleanSubscribers = function(url, subscriber, optionsRef, setReadyState, clearSocketIoPingInterval) {
+  return function() {
+    (0, manage_subscribers_1.removeSubscriber)(url, subscriber);
+    if (!(0, manage_subscribers_1.hasSubscribers)(url)) {
+      try {
+        var socketLike = globals_1.sharedWebSockets[url];
+        if (socketLike instanceof WebSocket) {
+          socketLike.onclose = function(event) {
+            if (optionsRef.current.onClose) {
+              optionsRef.current.onClose(event);
+            }
+            setReadyState(constants_1$3.ReadyState.CLOSED);
+          };
+        }
+        socketLike.close();
+      } catch (e2) {
+      }
+      if (clearSocketIoPingInterval)
+        clearSocketIoPingInterval();
+      delete globals_1.sharedWebSockets[url];
+    }
+  };
+};
+var createOrJoinSocket = function(webSocketRef, url, setReadyState, optionsRef, setLastMessage, startRef, reconnectCount, sendMessage) {
+  if (!constants_1$3.isEventSourceSupported && optionsRef.current.eventSourceOptions) {
+    if (constants_1$3.isReactNative) {
+      throw new Error("EventSource is not supported in ReactNative");
+    } else {
+      throw new Error("EventSource is not supported");
+    }
+  }
+  if (optionsRef.current.share) {
+    var clearSocketIoPingInterval = null;
+    if (globals_1.sharedWebSockets[url] === void 0) {
+      globals_1.sharedWebSockets[url] = optionsRef.current.eventSourceOptions ? new EventSource(url, optionsRef.current.eventSourceOptions) : new WebSocket(url, optionsRef.current.protocols);
+      webSocketRef.current = globals_1.sharedWebSockets[url];
+      setReadyState(constants_1$3.ReadyState.CONNECTING);
+      clearSocketIoPingInterval = (0, attach_shared_listeners_1.attachSharedListeners)(globals_1.sharedWebSockets[url], url, optionsRef, sendMessage);
+    } else {
+      webSocketRef.current = globals_1.sharedWebSockets[url];
+      setReadyState(globals_1.sharedWebSockets[url].readyState);
+    }
+    var subscriber = {
+      setLastMessage,
+      setReadyState,
+      optionsRef,
+      reconnectCount,
+      reconnect: startRef
+    };
+    (0, manage_subscribers_1.addSubscriber)(url, subscriber);
+    return cleanSubscribers(url, subscriber, optionsRef, setReadyState, clearSocketIoPingInterval);
+  } else {
+    webSocketRef.current = optionsRef.current.eventSourceOptions ? new EventSource(url, optionsRef.current.eventSourceOptions) : new WebSocket(url, optionsRef.current.protocols);
+    setReadyState(constants_1$3.ReadyState.CONNECTING);
+    if (!webSocketRef.current) {
+      throw new Error("WebSocket failed to be created");
+    }
+    return (0, attach_listener_1.attachListeners)(webSocketRef.current, {
+      setLastMessage,
+      setReadyState
+    }, optionsRef, startRef.current, reconnectCount, sendMessage);
+  }
+};
+createOrJoin.createOrJoinSocket = createOrJoinSocket;
+var getUrl$1 = {};
+var __awaiter$1 = commonjsGlobal && commonjsGlobal.__awaiter || function(thisArg, _arguments, P2, generator) {
+  function adopt(value) {
+    return value instanceof P2 ? value : new P2(function(resolve) {
+      resolve(value);
+    });
+  }
+  return new (P2 || (P2 = Promise))(function(resolve, reject) {
+    function fulfilled(value) {
+      try {
+        step(generator.next(value));
+      } catch (e2) {
+        reject(e2);
+      }
+    }
+    function rejected(value) {
+      try {
+        step(generator["throw"](value));
+      } catch (e2) {
+        reject(e2);
+      }
+    }
+    function step(result) {
+      result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
+    }
+    step((generator = generator.apply(thisArg, _arguments || [])).next());
+  });
+};
+var __generator$1 = commonjsGlobal && commonjsGlobal.__generator || function(thisArg, body) {
+  var _24 = { label: 0, sent: function() {
+    if (t2[0] & 1)
+      throw t2[1];
+    return t2[1];
+  }, trys: [], ops: [] }, f2, y2, t2, g2;
+  return g2 = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g2[Symbol.iterator] = function() {
+    return this;
+  }), g2;
+  function verb(n2) {
+    return function(v2) {
+      return step([n2, v2]);
+    };
+  }
+  function step(op) {
+    if (f2)
+      throw new TypeError("Generator is already executing.");
+    while (_24)
+      try {
+        if (f2 = 1, y2 && (t2 = op[0] & 2 ? y2["return"] : op[0] ? y2["throw"] || ((t2 = y2["return"]) && t2.call(y2), 0) : y2.next) && !(t2 = t2.call(y2, op[1])).done)
+          return t2;
+        if (y2 = 0, t2)
+          op = [op[0] & 2, t2.value];
+        switch (op[0]) {
+          case 0:
+          case 1:
+            t2 = op;
+            break;
+          case 4:
+            _24.label++;
+            return { value: op[1], done: false };
+          case 5:
+            _24.label++;
+            y2 = op[1];
+            op = [0];
+            continue;
+          case 7:
+            op = _24.ops.pop();
+            _24.trys.pop();
+            continue;
+          default:
+            if (!(t2 = _24.trys, t2 = t2.length > 0 && t2[t2.length - 1]) && (op[0] === 6 || op[0] === 2)) {
+              _24 = 0;
+              continue;
+            }
+            if (op[0] === 3 && (!t2 || op[1] > t2[0] && op[1] < t2[3])) {
+              _24.label = op[1];
+              break;
+            }
+            if (op[0] === 6 && _24.label < t2[1]) {
+              _24.label = t2[1];
+              t2 = op;
+              break;
+            }
+            if (t2 && _24.label < t2[2]) {
+              _24.label = t2[2];
+              _24.ops.push(op);
+              break;
+            }
+            if (t2[2])
+              _24.ops.pop();
+            _24.trys.pop();
+            continue;
+        }
+        op = body.call(thisArg, _24);
+      } catch (e2) {
+        op = [6, e2];
+        y2 = 0;
+      } finally {
+        f2 = t2 = 0;
+      }
+    if (op[0] & 5)
+      throw op[1];
+    return { value: op[0] ? op[1] : void 0, done: true };
+  }
+};
+Object.defineProperty(getUrl$1, "__esModule", { value: true });
+getUrl$1.getUrl = void 0;
+var socket_io_1 = socketIo;
+var getUrl = function(url, optionsRef) {
+  return __awaiter$1(void 0, void 0, void 0, function() {
+    var convertedUrl, parsedUrl, parsedWithQueryParams;
+    return __generator$1(this, function(_a) {
+      switch (_a.label) {
+        case 0:
+          if (!(typeof url === "function"))
+            return [3, 2];
+          return [4, url()];
+        case 1:
+          convertedUrl = _a.sent();
+          return [3, 3];
+        case 2:
+          convertedUrl = url;
+          _a.label = 3;
+        case 3:
+          parsedUrl = optionsRef.current.fromSocketIO ? (0, socket_io_1.parseSocketIOUrl)(convertedUrl) : convertedUrl;
+          parsedWithQueryParams = optionsRef.current.queryParams ? (0, socket_io_1.appendQueryParams)(parsedUrl, optionsRef.current.queryParams) : parsedUrl;
+          return [2, parsedWithQueryParams];
+      }
+    });
+  });
+};
+getUrl$1.getUrl = getUrl;
+var proxy = {};
+(function(exports) {
+  Object.defineProperty(exports, "__esModule", { value: true });
+  exports.websocketWrapper = void 0;
+  var websocketWrapper = function(webSocket, start) {
+    return new Proxy(webSocket, {
+      get: function(obj, key) {
+        var val = obj[key];
+        if (key === "reconnect")
+          return start;
+        if (typeof val === "function") {
+          console.error("Calling methods directly on the websocket is not supported at this moment. You must use the methods returned by useWebSocket.");
+          return function() {
+          };
+        } else {
+          return val;
+        }
+      },
+      set: function(obj, key, val) {
+        if (/^on/.test(key)) {
+          console.warn("The websocket's event handlers should be defined through the options object passed into useWebSocket.");
+          return false;
+        } else {
+          obj[key] = val;
+          return true;
+        }
+      }
+    });
+  };
+  exports.websocketWrapper = websocketWrapper;
+  exports.default = exports.websocketWrapper;
+})(proxy);
+var __assign$2 = commonjsGlobal && commonjsGlobal.__assign || function() {
+  __assign$2 = Object.assign || function(t2) {
+    for (var s, i = 1, n2 = arguments.length; i < n2; i++) {
+      s = arguments[i];
+      for (var p2 in s)
+        if (Object.prototype.hasOwnProperty.call(s, p2))
+          t2[p2] = s[p2];
+    }
+    return t2;
+  };
+  return __assign$2.apply(this, arguments);
+};
+var __awaiter = commonjsGlobal && commonjsGlobal.__awaiter || function(thisArg, _arguments, P2, generator) {
+  function adopt(value) {
+    return value instanceof P2 ? value : new P2(function(resolve) {
+      resolve(value);
+    });
+  }
+  return new (P2 || (P2 = Promise))(function(resolve, reject) {
+    function fulfilled(value) {
+      try {
+        step(generator.next(value));
+      } catch (e2) {
+        reject(e2);
+      }
+    }
+    function rejected(value) {
+      try {
+        step(generator["throw"](value));
+      } catch (e2) {
+        reject(e2);
+      }
+    }
+    function step(result) {
+      result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
+    }
+    step((generator = generator.apply(thisArg, _arguments || [])).next());
+  });
+};
+var __generator = commonjsGlobal && commonjsGlobal.__generator || function(thisArg, body) {
+  var _24 = { label: 0, sent: function() {
+    if (t2[0] & 1)
+      throw t2[1];
+    return t2[1];
+  }, trys: [], ops: [] }, f2, y2, t2, g2;
+  return g2 = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g2[Symbol.iterator] = function() {
+    return this;
+  }), g2;
+  function verb(n2) {
+    return function(v2) {
+      return step([n2, v2]);
+    };
+  }
+  function step(op) {
+    if (f2)
+      throw new TypeError("Generator is already executing.");
+    while (_24)
+      try {
+        if (f2 = 1, y2 && (t2 = op[0] & 2 ? y2["return"] : op[0] ? y2["throw"] || ((t2 = y2["return"]) && t2.call(y2), 0) : y2.next) && !(t2 = t2.call(y2, op[1])).done)
+          return t2;
+        if (y2 = 0, t2)
+          op = [op[0] & 2, t2.value];
+        switch (op[0]) {
+          case 0:
+          case 1:
+            t2 = op;
+            break;
+          case 4:
+            _24.label++;
+            return { value: op[1], done: false };
+          case 5:
+            _24.label++;
+            y2 = op[1];
+            op = [0];
+            continue;
+          case 7:
+            op = _24.ops.pop();
+            _24.trys.pop();
+            continue;
+          default:
+            if (!(t2 = _24.trys, t2 = t2.length > 0 && t2[t2.length - 1]) && (op[0] === 6 || op[0] === 2)) {
+              _24 = 0;
+              continue;
+            }
+            if (op[0] === 3 && (!t2 || op[1] > t2[0] && op[1] < t2[3])) {
+              _24.label = op[1];
+              break;
+            }
+            if (op[0] === 6 && _24.label < t2[1]) {
+              _24.label = t2[1];
+              t2 = op;
+              break;
+            }
+            if (t2 && _24.label < t2[2]) {
+              _24.label = t2[2];
+              _24.ops.push(op);
+              break;
+            }
+            if (t2[2])
+              _24.ops.pop();
+            _24.trys.pop();
+            continue;
+        }
+        op = body.call(thisArg, _24);
+      } catch (e2) {
+        op = [6, e2];
+        y2 = 0;
+      } finally {
+        f2 = t2 = 0;
+      }
+    if (op[0] & 5)
+      throw op[1];
+    return { value: op[0] ? op[1] : void 0, done: true };
+  }
+};
+var __importDefault = commonjsGlobal && commonjsGlobal.__importDefault || function(mod) {
+  return mod && mod.__esModule ? mod : { "default": mod };
+};
+Object.defineProperty(useWebsocket, "__esModule", { value: true });
+useWebsocket.useWebSocket = void 0;
+var react_1$2 = react.exports;
+var react_dom_1 = reactDom.exports;
+var constants_1$2 = constants;
+var create_or_join_1 = createOrJoin;
+var get_url_1 = getUrl$1;
+var proxy_1 = __importDefault(proxy);
+var util_1 = util;
+var useWebSocket$1 = function(url, options, connect) {
+  if (options === void 0) {
+    options = constants_1$2.DEFAULT_OPTIONS;
+  }
+  if (connect === void 0) {
+    connect = true;
+  }
+  var _a = (0, react_1$2.useState)(null), lastMessage = _a[0], setLastMessage = _a[1];
+  var _b = (0, react_1$2.useState)({}), readyState = _b[0], setReadyState = _b[1];
+  var lastJsonMessage = (0, react_1$2.useMemo)(function() {
+    if (lastMessage) {
+      try {
+        return JSON.parse(lastMessage.data);
+      } catch (e2) {
+        return constants_1$2.UNPARSABLE_JSON_OBJECT;
+      }
+    }
+    return null;
+  }, [lastMessage]);
+  var convertedUrl = (0, react_1$2.useRef)(null);
+  var webSocketRef = (0, react_1$2.useRef)(null);
+  var startRef = (0, react_1$2.useRef)(function() {
+    return void 0;
+  });
+  var reconnectCount = (0, react_1$2.useRef)(0);
+  var messageQueue = (0, react_1$2.useRef)([]);
+  var webSocketProxy = (0, react_1$2.useRef)(null);
+  var optionsCache = (0, react_1$2.useRef)(options);
+  optionsCache.current = options;
+  var readyStateFromUrl = convertedUrl.current && readyState[convertedUrl.current] !== void 0 ? readyState[convertedUrl.current] : url !== null && connect === true ? constants_1$2.ReadyState.CONNECTING : constants_1$2.ReadyState.UNINSTANTIATED;
+  var stringifiedQueryParams = options.queryParams ? JSON.stringify(options.queryParams) : null;
+  var sendMessage = (0, react_1$2.useCallback)(function(message, keep) {
+    var _a2;
+    if (keep === void 0) {
+      keep = true;
+    }
+    if (constants_1$2.isEventSourceSupported && webSocketRef.current instanceof EventSource) {
+      console.warn("Unable to send a message from an eventSource");
+      return;
+    }
+    if (((_a2 = webSocketRef.current) === null || _a2 === void 0 ? void 0 : _a2.readyState) === constants_1$2.ReadyState.OPEN) {
+      (0, util_1.assertIsWebSocket)(webSocketRef.current, optionsCache.current.skipAssert);
+      webSocketRef.current.send(message);
+    } else if (keep) {
+      messageQueue.current.push(message);
+    }
+  }, []);
+  var sendJsonMessage = (0, react_1$2.useCallback)(function(message, keep) {
+    if (keep === void 0) {
+      keep = true;
+    }
+    sendMessage(JSON.stringify(message), keep);
+  }, [sendMessage]);
+  var getWebSocket = (0, react_1$2.useCallback)(function() {
+    if (optionsCache.current.share !== true || constants_1$2.isEventSourceSupported && webSocketRef.current instanceof EventSource) {
+      return webSocketRef.current;
+    }
+    if (webSocketProxy.current === null && webSocketRef.current) {
+      (0, util_1.assertIsWebSocket)(webSocketRef.current, optionsCache.current.skipAssert);
+      webSocketProxy.current = (0, proxy_1.default)(webSocketRef.current, startRef);
+    }
+    return webSocketProxy.current;
+  }, []);
+  (0, react_1$2.useEffect)(function() {
+    if (url !== null && connect === true) {
+      var removeListeners_1;
+      var expectClose_1 = false;
+      var createOrJoin_1 = true;
+      var start_1 = function() {
+        return __awaiter(void 0, void 0, void 0, function() {
+          var _a2, protectedSetLastMessage, protectedSetReadyState;
+          return __generator(this, function(_b2) {
+            switch (_b2.label) {
+              case 0:
+                _a2 = convertedUrl;
+                return [4, (0, get_url_1.getUrl)(url, optionsCache)];
+              case 1:
+                _a2.current = _b2.sent();
+                protectedSetLastMessage = function(message) {
+                  if (!expectClose_1) {
+                    (0, react_dom_1.flushSync)(function() {
+                      return setLastMessage(message);
+                    });
+                  }
+                };
+                protectedSetReadyState = function(state) {
+                  if (!expectClose_1) {
+                    (0, react_dom_1.flushSync)(function() {
+                      return setReadyState(function(prev2) {
+                        var _a3;
+                        return __assign$2(__assign$2({}, prev2), convertedUrl.current && (_a3 = {}, _a3[convertedUrl.current] = state, _a3));
+                      });
+                    });
+                  }
+                };
+                if (createOrJoin_1) {
+                  removeListeners_1 = (0, create_or_join_1.createOrJoinSocket)(webSocketRef, convertedUrl.current, protectedSetReadyState, optionsCache, protectedSetLastMessage, startRef, reconnectCount, sendMessage);
+                }
+                return [2];
+            }
+          });
+        });
+      };
+      startRef.current = function() {
+        if (!expectClose_1) {
+          if (webSocketProxy.current)
+            webSocketProxy.current = null;
+          removeListeners_1 === null || removeListeners_1 === void 0 ? void 0 : removeListeners_1();
+          start_1();
+        }
+      };
+      start_1();
+      return function() {
+        expectClose_1 = true;
+        createOrJoin_1 = false;
+        if (webSocketProxy.current)
+          webSocketProxy.current = null;
+        removeListeners_1 === null || removeListeners_1 === void 0 ? void 0 : removeListeners_1();
+        setLastMessage(null);
+      };
+    } else if (url === null || connect === false) {
+      reconnectCount.current = 0;
+      setReadyState(function(prev2) {
+        var _a2;
+        return __assign$2(__assign$2({}, prev2), convertedUrl.current && (_a2 = {}, _a2[convertedUrl.current] = constants_1$2.ReadyState.CLOSED, _a2));
+      });
+    }
+  }, [url, connect, stringifiedQueryParams, sendMessage]);
+  (0, react_1$2.useEffect)(function() {
+    if (readyStateFromUrl === constants_1$2.ReadyState.OPEN) {
+      messageQueue.current.splice(0).forEach(function(message) {
+        sendMessage(message);
+      });
+    }
+  }, [readyStateFromUrl]);
+  return {
+    sendMessage,
+    sendJsonMessage,
+    lastMessage,
+    lastJsonMessage,
+    readyState: readyStateFromUrl,
+    getWebSocket
+  };
+};
+useWebsocket.useWebSocket = useWebSocket$1;
+var useSocketIo = {};
+var __assign$1 = commonjsGlobal && commonjsGlobal.__assign || function() {
+  __assign$1 = Object.assign || function(t2) {
+    for (var s, i = 1, n2 = arguments.length; i < n2; i++) {
+      s = arguments[i];
+      for (var p2 in s)
+        if (Object.prototype.hasOwnProperty.call(s, p2))
+          t2[p2] = s[p2];
+    }
+    return t2;
+  };
+  return __assign$1.apply(this, arguments);
+};
+Object.defineProperty(useSocketIo, "__esModule", { value: true });
+useSocketIo.useSocketIO = void 0;
+var react_1$1 = react.exports;
+var use_websocket_1$1 = useWebsocket;
+var constants_1$1 = constants;
+var emptyEvent = {
+  type: "empty",
+  payload: null
+};
+var getSocketData = function(event) {
+  if (!event || !event.data) {
+    return emptyEvent;
+  }
+  var match2 = event.data.match(/\[.*]/);
+  if (!match2) {
+    return emptyEvent;
+  }
+  var data = JSON.parse(match2);
+  if (!Array.isArray(data) || !data[1]) {
+    return emptyEvent;
+  }
+  return {
+    type: data[0],
+    payload: data[1]
+  };
+};
+var useSocketIO = function(url, options, connect) {
+  if (options === void 0) {
+    options = constants_1$1.DEFAULT_OPTIONS;
+  }
+  if (connect === void 0) {
+    connect = true;
+  }
+  var optionsWithSocketIO = (0, react_1$1.useMemo)(function() {
+    return __assign$1(__assign$1({}, options), { fromSocketIO: true });
+  }, []);
+  var _a = (0, use_websocket_1$1.useWebSocket)(url, optionsWithSocketIO, connect), sendMessage = _a.sendMessage, sendJsonMessage = _a.sendJsonMessage, lastMessage = _a.lastMessage, readyState = _a.readyState, getWebSocket = _a.getWebSocket;
+  var socketIOLastMessage = (0, react_1$1.useMemo)(function() {
+    return getSocketData(lastMessage);
+  }, [lastMessage]);
+  return {
+    sendMessage,
+    sendJsonMessage,
+    lastMessage: socketIOLastMessage,
+    lastJsonMessage: socketIOLastMessage,
+    readyState,
+    getWebSocket
+  };
+};
+useSocketIo.useSocketIO = useSocketIO;
+var useEventSource$1 = {};
+var __assign = commonjsGlobal && commonjsGlobal.__assign || function() {
+  __assign = Object.assign || function(t2) {
+    for (var s, i = 1, n2 = arguments.length; i < n2; i++) {
+      s = arguments[i];
+      for (var p2 in s)
+        if (Object.prototype.hasOwnProperty.call(s, p2))
+          t2[p2] = s[p2];
+    }
+    return t2;
+  };
+  return __assign.apply(this, arguments);
+};
+var __rest = commonjsGlobal && commonjsGlobal.__rest || function(s, e2) {
+  var t2 = {};
+  for (var p2 in s)
+    if (Object.prototype.hasOwnProperty.call(s, p2) && e2.indexOf(p2) < 0)
+      t2[p2] = s[p2];
+  if (s != null && typeof Object.getOwnPropertySymbols === "function")
+    for (var i = 0, p2 = Object.getOwnPropertySymbols(s); i < p2.length; i++) {
+      if (e2.indexOf(p2[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p2[i]))
+        t2[p2[i]] = s[p2[i]];
+    }
+  return t2;
+};
+Object.defineProperty(useEventSource$1, "__esModule", { value: true });
+useEventSource$1.useEventSource = void 0;
+var react_1 = react.exports;
+var use_websocket_1 = useWebsocket;
+var constants_1 = constants;
+var useEventSource = function(url, _a, connect) {
+  if (_a === void 0) {
+    _a = constants_1.DEFAULT_EVENT_SOURCE_OPTIONS;
+  }
+  var withCredentials = _a.withCredentials, events = _a.events, options = __rest(_a, ["withCredentials", "events"]);
+  if (connect === void 0) {
+    connect = true;
+  }
+  var optionsWithEventSource = __assign(__assign({}, options), { eventSourceOptions: {
+    withCredentials
+  } });
+  var eventsRef = (0, react_1.useRef)(constants_1.EMPTY_EVENT_HANDLERS);
+  if (events) {
+    eventsRef.current = events;
+  }
+  var _b = (0, use_websocket_1.useWebSocket)(url, optionsWithEventSource, connect), lastMessage = _b.lastMessage, readyState = _b.readyState, getWebSocket = _b.getWebSocket;
+  (0, react_1.useEffect)(function() {
+    if (lastMessage === null || lastMessage === void 0 ? void 0 : lastMessage.type) {
+      Object.entries(eventsRef.current).forEach(function(_a2) {
+        var type = _a2[0], handler = _a2[1];
+        if (type === lastMessage.type) {
+          handler(lastMessage);
+        }
+      });
+    }
+  }, [lastMessage]);
+  return {
+    lastEvent: lastMessage,
+    readyState,
+    getEventSource: getWebSocket
+  };
+};
+useEventSource$1.useEventSource = useEventSource;
+(function(exports) {
+  Object.defineProperty(exports, "__esModule", { value: true });
+  exports.resetGlobalState = exports.useEventSource = exports.ReadyState = exports.useSocketIO = exports.default = void 0;
+  var use_websocket_12 = useWebsocket;
+  Object.defineProperty(exports, "default", { enumerable: true, get: function() {
+    return use_websocket_12.useWebSocket;
+  } });
+  var use_socket_io_1 = useSocketIo;
+  Object.defineProperty(exports, "useSocketIO", { enumerable: true, get: function() {
+    return use_socket_io_1.useSocketIO;
+  } });
+  var constants_12 = constants;
+  Object.defineProperty(exports, "ReadyState", { enumerable: true, get: function() {
+    return constants_12.ReadyState;
+  } });
+  var use_event_source_1 = useEventSource$1;
+  Object.defineProperty(exports, "useEventSource", { enumerable: true, get: function() {
+    return use_event_source_1.useEventSource;
+  } });
+  var util_12 = util;
+  Object.defineProperty(exports, "resetGlobalState", { enumerable: true, get: function() {
+    return util_12.resetGlobalState;
+  } });
+})(dist);
+const useWebSocket = /* @__PURE__ */ getDefaultExportFromCjs(dist);
 const getGate = () => {
   var _a;
   return ((_a = window.myAppGates) == null ? void 0 : _a[0]) || {};
@@ -14697,19 +15900,60 @@ const _App = () => {
     requirements,
     reaction
   } = getGate();
+  const [connectedWallet, setConnectedWallet] = react.exports.useState(false);
+  const {
+    isLocked,
+    unlockingTokens,
+    evaluateGate
+  } = useEvaluateGate();
+  const [socketUrl, setSocketUrl] = react.exports.useState("wss://echo.websocket.org");
   const Button2 = newStyled.button`
-  color: hotpink;
-`;
+    color: #fff;
+    border: none;
+    background-color: #292929;
+    padding: 8px 16px;
+    border-radius: 8px;
+    margin: 24px auto 0;
+    display: block;
+    text-transform: uppercase;
+    cursor: pointer;
+  `;
+  react.exports.useEffect(() => {
+  }, []);
+  const {
+    lastMessage
+  } = useWebSocket(socketUrl, {
+    onMessage: (message) => console.log(message)
+  });
+  react.exports.useMemo(() => {
+    if (socketUrl) {
+      if (lastMessage)
+        console.log(lastMessage);
+    }
+  }, [socketUrl]);
+  const handleConnection = react.exports.useCallback(async () => {
+    const response = await fetch(`https://8549-45-188-121-110.sa.ngrok.io/public/signin`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*"
+      }
+    });
+    const json = await response.json();
+    setSocketUrl(json.webSocket);
+    console.log(json);
+  }, []);
   return /* @__PURE__ */ jsx(TokengateProvider, {
     isConnected: false,
     connectButton: /* @__PURE__ */ jsx(Button2, {
-      children: "Connect your wallet"
+      onClick: handleConnection,
+      children: connectedWallet ? "Disconnect wallet" : "Connect Wallet"
     }),
     isLoading: false,
     requirements,
     reaction,
-    isLocked: true,
-    unlockingTokens: []
+    isLocked,
+    unlockingTokens
   });
 };
 const App = () => {
