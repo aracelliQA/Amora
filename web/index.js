@@ -8,8 +8,10 @@ import shopify from "./shopify.js";
 import createGate from "./api/create-gate.js";
 import retrieveGates from "./api/retrieve-gates.js";
 import deleteGate from "./api/delete-gate.js";
+import { configurePublicApi } from "./public-api.js";
 import GDPRWebhookHandlers from "./gdpr.js";
 
+// @ts-ignore
 const PORT = parseInt(process.env.BACKEND_PORT || process.env.PORT, 10);
 
 const STATIC_PATH =
@@ -28,10 +30,12 @@ app.get(
 );
 app.post(
   shopify.config.webhooks.path,
+  // @ts-ignore
   shopify.processWebhooks({ webhookHandlers: GDPRWebhookHandlers })
 );
 
 app.use(express.json());
+configurePublicApi(app);
 
 // All endpoints after this point will require an active session
 app.use("/api/*", shopify.validateAuthenticatedSession());
