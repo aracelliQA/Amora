@@ -1,8 +1,12 @@
 import { createHmac } from "crypto";
 import { XummSdk } from "xumm-sdk";
 import cors from "cors";
+import * as dotenv from 'dotenv'
+dotenv.config()
 
 import * as xrpl from "xrpl";
+
+console.log(process.env);
 
 import { getContractAddressesFromGate } from "./api/gates.js";
 
@@ -12,8 +16,8 @@ export function configurePublicApi(app) {
     origin: "*",
   };
   const xummSdk = new XummSdk(
-    "bbf0dceb-5c4e-4f42-b4b3-dfc7896f78fe",
-    "6b2f451d-2cd3-4791-9bc4-a574d22bf537"
+    process.env.XUMM_KEY,
+    process.env.XUMM_SECRET
   );
 
   // Configure CORS to allow requests to /public from any origin
