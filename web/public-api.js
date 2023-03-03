@@ -2,6 +2,8 @@ import { createHmac } from "crypto";
 import { XummSdk } from "xumm-sdk";
 import cors from "cors";
 
+import * as xrpl from "xrpl";
+
 import { getContractAddressesFromGate } from "./api/gates.js";
 
 export function configurePublicApi(app) {
@@ -9,6 +11,10 @@ export function configurePublicApi(app) {
   const corsOptions = {
     origin: "*",
   };
+  const xummSdk = new XummSdk(
+    "bbf0dceb-5c4e-4f42-b4b3-dfc7896f78fe",
+    "6b2f451d-2cd3-4791-9bc4-a574d22bf537"
+  );
 
   // Configure CORS to allow requests to /public from any origin
   // enables pre-flight requests
@@ -18,31 +24,28 @@ export function configurePublicApi(app) {
     const requestPayload = {
       txjson: {
         TransactionType: "SignIn",
-      }
+      },
     };
 
-    const xummSdk = new XummSdk(
-      "bbf0dceb-5c4e-4f42-b4b3-dfc7896f78fe",
-      "6b2f451d-2cd3-4791-9bc4-a574d22bf537"
-    );
     try {
       const payload = await xummSdk.payload.createAndSubscribe(
         requestPayload,
-        (event) => {
-          console.log("Payload event", event.data);
+        async (event) => {
+          console.log("Event log: ", event.data);
           if (Object.keys(event.data).indexOf("signed") > -1) {
             return event.data;
           }
         }
       );
 
-      console.log("url", payload.created.refs.qr_png);
-      console.log('payload', {payload})
-      console.log("Pushed", payload.created.pushed);
+      if (payload.created.pushed == false) {
+        res.status(200).send({
+          qrCode: payload.created.refs.qr_png,
+          webSocket: payload.websocket._url,
+        });
+      }
 
-      const resolvedRequest = await payload.resolved;
-
-      console.log({ resolvedRequest });
+      /*const resolvedRequest = await payload.resolved;
 
       if (resolvedRequest.signed == false) {
         console.log("user not signed");
@@ -52,7 +55,7 @@ export function configurePublicApi(app) {
           resolvedRequest.payload_uuidv4
         );
         console.log("user_token", result);
-      }
+      }*/
     } catch (e) {
       console.log(e);
     }
@@ -62,7 +65,7 @@ export function configurePublicApi(app) {
     // evaluate the gate, message, and signature
     const { shopDomain, productGid, address, gateConfigurationGid } = req.body;
 
-    if (!address.address) {
+    if (!address) {
       res.status(403).send("No wallet found");
       return;
     }
@@ -77,23 +80,37 @@ export function configurePublicApi(app) {
 
     console.log({ requiredContractAddresses });
 
-    // now lookup nfts
-    const unlockingTokens = await retrieveUnlockingTokens(
-      address,
-      requiredContractAddresses
-    );
+    try {
+      const payloadGenerated = await xummSdk.payload.get(address);
+      const walletAddress = payloadGenerated.response.account;
 
-    if (unlockingTokens.length === 0) {
-      res.status(403).send("No unlocking tokens");
-      return;
+      console.log({ walletAddress });
+
+      try {
+        const unlockingTokens = await retrieveUnlockingTokens(
+          walletAddress,
+          requiredContractAddresses
+        );
+
+        console.log({ unlockingTokens });
+
+        if (unlockingTokens.length === 0) {
+          res.status(403).send({ message: "No unlocking tokens" });
+          return;
+        }
+
+        const payload = {
+          id: gateConfigurationGid,
+        };
+
+        const response = { gateContext: [getHmac(payload)], unlockingTokens };
+        res.status(200).send(response);
+      } catch (e) {
+        res.status(403).send("Error to retrieve tokens");
+      }
+    } catch (e) {
+      res.status(403).send("Error to connect wallet");
     }
-
-    const payload = {
-      id: gateConfigurationGid,
-    };
-
-    const response = { gateContext: [getHmac(payload)], unlockingTokens };
-    res.status(200).send(response);
   });
 }
 
@@ -108,8 +125,28 @@ function getHmac(payload) {
   };
 }
 
-function retrieveUnlockingTokens(address, contractAddresses) {
+async function retrieveUnlockingTokens(address, contractAddresses) {
   // this could be some lookup against some node or a 3rd party service like Alchemy
+
+  const client = new xrpl.Client("wss://xrplcluster.com/");
+
+  try {
+    await client.connect();
+    const nfts = await client.request({
+      method: "account_nfts",
+      account: address,
+    });
+
+    const NFTArray = nfts.result.account_nfts;
+
+    const filteredArray = NFTArray.filter(
+      (x) => [...contractAddresses].indexOf(x) == -1
+    );
+
+    return filteredArray;
+  } catch (e) {
+    throw new Error(e);
+  }
 
   /*async function getTokens() {
     const client = new xrpl.Client("wss://xrplcluster.com/")
@@ -123,14 +160,4 @@ function retrieveUnlockingTokens(address, contractAddresses) {
     document.getElementById('standbyResultField').value = results
     client.disconnect()
   } //End of getTokens()*/
-
-  return Promise.resolve([
-    {
-      name: "CryptoPunk #1719",
-      imageUrl:
-        "https://storage.cloud.google.com/shopify-blockchain-development/images/punk1719.png",
-      collectionName: "CryptoPunks",
-      collectionAddress: "0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB",
-    },
-  ]);
 }
