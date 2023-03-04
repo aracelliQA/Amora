@@ -14790,7 +14790,7 @@ function getGateContextClient(options) {
   }
   throw new Error(`Unsupported backing store: ${options.backingStore}`);
 }
-const host = "https://46ab-45-188-121-18.sa.ngrok.io";
+const host = "https://d9b6-2804-548-c00d-ac00-11a6-a6e3-5a16-4f03.sa.ngrok.io";
 const gateContextClient = getGateContextClient({
   backingStore: "ajaxApi",
   shopifyGateContextGenerator: async (data) => {
@@ -15998,6 +15998,7 @@ const _App = () => {
     margin: 24px auto 0;
     display: block;
     text-transform: uppercase;
+    text-align: center;
     cursor: pointer;
     min-width: 150px;
   `;
@@ -16005,11 +16006,7 @@ const _App = () => {
   }, []);
   useWebSocket(socketUrl, {
     onMessage: async (message) => {
-      console.log(message);
       const data = JSON.parse(message.data);
-      console.log({
-        data
-      });
       if (data.signed) {
         setConnectedWallet(true);
         try {
@@ -16035,7 +16032,7 @@ const _App = () => {
   const handleConnection = react.exports.useCallback(async () => {
     if (!(socketUrl.indexOf("xumm") > -1)) {
       setIsLoading(true);
-      const response = await fetch(`https://46ab-45-188-121-18.sa.ngrok.io/public/signin`, {
+      const response = await fetch(`https://d9b6-2804-548-c00d-ac00-11a6-a6e3-5a16-4f03.sa.ngrok.io/public/signin`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -16047,7 +16044,6 @@ const _App = () => {
       setSocketUrl(json.webSocket);
       setModalImage(json.qrCode);
       openModal();
-      console.log(json);
     } else {
       openModal();
     }

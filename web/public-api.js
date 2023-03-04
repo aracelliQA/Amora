@@ -101,7 +101,7 @@ export function configurePublicApi(app) {
 
 function getHmac(payload) {
   const hmacMessage = payload.id;
-  const hmac = createHmac("sha256", "secret-key");
+  const hmac = createHmac("sha256", "amora-secret-key");
   hmac.update(hmacMessage);
   const hmacDigest = hmac.digest("hex");
   return {
@@ -123,7 +123,7 @@ async function retrieveUnlockingTokens(address, contractAddresses) {
     });
 
     const NFTArray = nfts.result.account_nfts;
-
+    
     const filteredArray = NFTArray.filter(
       (x) => [...contractAddresses].indexOf(x) == -1
     );
