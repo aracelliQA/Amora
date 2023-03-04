@@ -8924,7 +8924,7 @@ function Ue(e2) {
   var o = Ce.apply(void 0, [e2].concat(n2)).join(""), s = xe(o);
   return new ve(s, o);
 }
-const styled12 = He;
+const styled = He;
 var jsxRuntime = { exports: {} };
 var reactJsxRuntime_production_min = {};
 /**
@@ -8957,6 +8957,7 @@ reactJsxRuntime_production_min.jsxs = q;
     module.exports = reactJsxRuntime_production_min;
   }
 })(jsxRuntime);
+const Fragment = jsxRuntime.exports.Fragment;
 const jsx = jsxRuntime.exports.jsx;
 const jsxs = jsxRuntime.exports.jsxs;
 function _typeof(obj) {
@@ -12391,7 +12392,7 @@ var VariantMappedToCSS = {
   headingMd: HeadingMd,
   headingSm: HeadingSm
 };
-var Wrapper = styled12.span`
+var Wrapper = styled.span`
   letter-spacing: 0;
   ${({ color }) => ColorMappedToCSS[color]};
   ${({ variant }) => VariantMappedToCSS[variant]};
@@ -12410,7 +12411,7 @@ var spinAnimation = Ue`
         transform: rotate(1turn)
     };
 `;
-var SpinnerComponent = styled12.div`
+var SpinnerComponent = styled.div`
   width: auto;
   margin: 0 auto;
 
@@ -12420,10 +12421,10 @@ var SpinnerComponent = styled12.div`
     width: 20px;
   }
 `;
-var Spinner = () => {
+var Spinner$1 = () => {
   return /* @__PURE__ */ jsx(SpinnerComponent, { children: /* @__PURE__ */ jsx("svg", { viewBox: "0 0 20 20", xmlns: "http://www.w3.org/2000/svg", children: /* @__PURE__ */ jsx("path", { d: "M7.229 1.173a9.25 9.25 0 1011.655 11.412 1.25 1.25 0 10-2.4-.698 6.75 6.75 0 11-8.506-8.329 1.25 1.25 0 10-.75-2.385z" }) }) });
 };
-var Spinner_default = Spinner;
+var Spinner_default = Spinner$1;
 var PrimaryButtonWrapper = Ce`
   background-color: ${({ theme }) => theme.buttons.variants.primary.background};
   border: ${({ theme }) => theme.buttons.variants.primary.border};
@@ -12481,7 +12482,7 @@ var SizeMap = {
   Md: MediumButton,
   Sm: SmallButton
 };
-var ButtonWrapper = styled12.button`
+var ButtonWrapper = styled.button`
   appearance: unset;
   box-sizing: border-box;
   display: flex;
@@ -12538,7 +12539,7 @@ var Button = ({
     }
   );
 };
-styled12.button`
+styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
@@ -12560,12 +12561,12 @@ styled12.button`
     color: ${({ theme }) => theme.other.iconColor};
   }
 `;
-var SkeletonThumbnail = styled12.div`
+var SkeletonThumbnail = styled.div`
   background-color: #e4e5e7;
   width: ${(props) => props.size ? `${props.size}px` : "100%"};
   height: ${(props) => props.size ? `${props.size}px` : "100%"};
 `;
-var SkeletonDisplayText = styled12.div`
+var SkeletonDisplayText = styled.div`
   background-color: #e4e5e7;
   width: 7.5rem;
   height: 20px;
@@ -12949,7 +12950,7 @@ var AvailableSoonButton = ({ availableDate }) => {
     }
   );
 };
-var StyledCard = styled12.div`
+var StyledCard = styled.div`
   background-color: ${({ theme }) => theme.tokengate.background};
   border: ${({ theme }) => theme.tokengate.border};
   border-radius: ${({ theme }) => theme.tokengate.borderRadius};
@@ -12957,7 +12958,7 @@ var StyledCard = styled12.div`
   padding: ${({ theme }) => theme.tokengate.padding};
   text-align: left;
 `;
-var SubtitleWrapper = styled12.div`
+var SubtitleWrapper = styled.div`
   padding-top: 4px;
 `;
 var Card = ({ title, subtitle, button, children }) => {
@@ -12968,14 +12969,14 @@ var Card = ({ title, subtitle, button, children }) => {
     button
   ] });
 };
-var Wrapper2 = styled12.div`
+var Wrapper2 = styled.div`
   p {
     text-align: center;
     white-space: pre-line;
   }
 `;
 var Error$1 = ({ text }) => /* @__PURE__ */ jsx(Wrapper2, { children: /* @__PURE__ */ jsx(Text, { as: "p", variant: "bodyMd", color: "critical", children: text }) });
-var Wrapper3 = styled12.div`
+var Wrapper3 = styled.div`
   width: 100%;
 
   p {
@@ -13000,7 +13001,7 @@ var SoldOutButton = () => {
     /* @__PURE__ */ jsx(Text, { as: "p", variant: "bodyMd", color: "secondary", children: t2("description") })
   ] });
 };
-var TokenBaseStyle = styled12.div`
+var TokenBaseStyle = styled.div`
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -13009,7 +13010,7 @@ var TokenBaseStyle = styled12.div`
   padding: 12px 0;
   box-sizing: unset;
 `;
-var TokenBaseIcon = styled12.div`
+var TokenBaseIcon = styled.div`
   height: 48px;
   width: 48px;
   position: relative;
@@ -13022,12 +13023,12 @@ var TokenBaseIcon = styled12.div`
     overflow: hidden;
   }
 `;
-var TokenBaseBadge = styled12.div`
+var TokenBaseBadge = styled.div`
   position: absolute;
   right: 1px;
   bottom: 1px;
 `;
-var TokenBaseText = styled12.div`
+var TokenBaseText = styled.div`
   flex-grow: 1;
 
   p {
@@ -13057,12 +13058,12 @@ var TokenBaseSkeleton = ({ round }) => /* @__PURE__ */ jsxs(TokenBaseStyle, { ch
   /* @__PURE__ */ jsx(TokenBaseIcon, { round, children: /* @__PURE__ */ jsx(SkeletonThumbnail, {}) }),
   /* @__PURE__ */ jsx(TokenBaseText, { children: /* @__PURE__ */ jsx(SkeletonDisplayText, {}) })
 ] });
-var TokenListImageStyle = styled12.img`
+var TokenListImageStyle = styled.img`
   width: 100%;
   height: 100%;
   object-fit: cover;
 `;
-var TokenListWrapper = styled12.div`
+var TokenListWrapper = styled.div`
   padding: 8px 0;
   box-sizing: unset;
 `;
@@ -13094,7 +13095,7 @@ var TokenList = ({ tokens, separator, isLoading }) => {
     ] }, title)
   ) });
 };
-var TokengateRequirementsSeparatorStyle = styled12.div`
+var TokengateRequirementsSeparatorStyle = styled.div`
   display: flex;
   align-items: center;
   column-gap: ${({ $gap }) => $gap};
@@ -13108,7 +13109,7 @@ var TokengateRequirementsSeparatorStyle = styled12.div`
     background-color: ${({ theme }) => theme.other.dividerColor};
   }
 `;
-var TokengateRequirementsBadgeWrapper = styled12.div`
+var TokengateRequirementsBadgeWrapper = styled.div`
   color: white;
   line-height: 0;
 `;
@@ -14789,7 +14790,7 @@ function getGateContextClient(options) {
   }
   throw new Error(`Unsupported backing store: ${options.backingStore}`);
 }
-const host = "https://b57c-45-188-121-110.sa.ngrok.io";
+const host = "https://d9b6-2804-548-c00d-ac00-11a6-a6e3-5a16-4f03.sa.ngrok.io";
 const gateContextClient = getGateContextClient({
   backingStore: "ajaxApi",
   shopifyGateContextGenerator: async (data) => {
@@ -14815,6 +14816,7 @@ const useEvaluateGate = () => {
   const productId = getProductId();
   const evaluateGate = react.exports.useCallback(
     async (address) => {
+      console.log("Address", address);
       if (address) {
         const response = await fetch(`${host}/public/gateEvaluation`, {
           method: "POST",
@@ -15891,6 +15893,83 @@ useEventSource$1.useEventSource = useEventSource;
   } });
 })(dist);
 const useWebSocket = /* @__PURE__ */ getDefaultExportFromCjs(dist);
+const XummModal = ({
+  isModalOpen,
+  imageUrl,
+  closeModal
+}) => {
+  const Shadow = newStyled.div`
+    position: fixed;
+    width: 100vw;
+    height: 100vh;
+    z-index: 999;
+    inset: 0px;
+    background-color: #00000024;
+  `;
+  const Container = newStyled.div`
+    position: absolute;
+    background-color: #fff;
+    border-radius: 8px;
+    min-height: 200px;
+    min-width: 200px;
+    z-index: 1000;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    padding: 8px 16px 32px;
+  `;
+  const titleStyle = {
+    fontWeight: 600,
+    fontSize: "16px",
+    marginBottom: "16px"
+  };
+  return /* @__PURE__ */ jsx(Fragment, {
+    children: isModalOpen && /* @__PURE__ */ jsx(Shadow, {
+      onClick: closeModal,
+      children: /* @__PURE__ */ jsxs(Container, {
+        children: [/* @__PURE__ */ jsx("h2", {
+          style: titleStyle,
+          children: "Sign in using your Xumm App to unlock perks!"
+        }), /* @__PURE__ */ jsx("div", {
+          style: {
+            width: "250px",
+            height: "250px",
+            margin: "0 auto"
+          },
+          children: /* @__PURE__ */ jsx("img", {
+            style: {
+              width: "100%",
+              height: "100%"
+            },
+            src: imageUrl
+          })
+        })]
+      })
+    })
+  });
+};
+const rotate360 = Ue`
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+`;
+const Spinner = styled.div`
+  animation: ${rotate360} 1s linear infinite;
+  transform: translateZ(0);
+  
+  border-top: 2px solid grey;
+  border-right: 2px solid grey;
+  border-bottom: 2px solid grey;
+  border-left: 4px solid black;
+  background: transparent;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+`;
 const getGate = () => {
   var _a;
   return ((_a = window.myAppGates) == null ? void 0 : _a[0]) || {};
@@ -15907,6 +15986,9 @@ const _App = () => {
     evaluateGate
   } = useEvaluateGate();
   const [socketUrl, setSocketUrl] = react.exports.useState("wss://echo.websocket.org");
+  const [isLoading, setIsLoading] = react.exports.useState(false);
+  const [modalImage, setModalImage] = react.exports.useState("");
+  const [modalOpen, setModalOpen] = react.exports.useState(false);
   const Button2 = newStyled.button`
     color: #fff;
     border: none;
@@ -15916,44 +15998,77 @@ const _App = () => {
     margin: 24px auto 0;
     display: block;
     text-transform: uppercase;
+    text-align: center;
     cursor: pointer;
+    min-width: 150px;
   `;
   react.exports.useEffect(() => {
   }, []);
-  const {
-    lastMessage
-  } = useWebSocket(socketUrl, {
-    onMessage: (message) => console.log(message)
+  useWebSocket(socketUrl, {
+    onMessage: async (message) => {
+      const data = JSON.parse(message.data);
+      if (data.signed) {
+        setConnectedWallet(true);
+        try {
+          if (data.payload_uuidv4) {
+            await evaluateGate(data.payload_uuidv4);
+            closeModal();
+          } else {
+            throw new Error("Wallet address not found");
+          }
+        } catch (e2) {
+          closeModal();
+          throw new Error(e2);
+        }
+      }
+    }
   });
-  react.exports.useMemo(() => {
-    if (socketUrl) {
-      if (lastMessage)
-        console.log(lastMessage);
+  const openModal = () => {
+    setModalOpen(true);
+  };
+  const closeModal = () => {
+    setModalOpen(false);
+  };
+  const handleConnection = react.exports.useCallback(async () => {
+    if (!(socketUrl.indexOf("xumm") > -1)) {
+      setIsLoading(true);
+      const response = await fetch(`https://d9b6-2804-548-c00d-ac00-11a6-a6e3-5a16-4f03.sa.ngrok.io/public/signin`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
+        }
+      });
+      setIsLoading(false);
+      const json = await response.json();
+      setSocketUrl(json.webSocket);
+      setModalImage(json.qrCode);
+      openModal();
+    } else {
+      openModal();
     }
   }, [socketUrl]);
-  const handleConnection = react.exports.useCallback(async () => {
-    const response = await fetch(`https://8549-45-188-121-110.sa.ngrok.io/public/signin`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*"
-      }
-    });
-    const json = await response.json();
-    setSocketUrl(json.webSocket);
-    console.log(json);
-  }, []);
-  return /* @__PURE__ */ jsx(TokengateProvider, {
-    isConnected: false,
-    connectButton: /* @__PURE__ */ jsx(Button2, {
-      onClick: handleConnection,
-      children: connectedWallet ? "Disconnect wallet" : "Connect Wallet"
-    }),
-    isLoading: false,
-    requirements,
-    reaction,
-    isLocked,
-    unlockingTokens
+  return /* @__PURE__ */ jsxs(Fragment, {
+    children: [/* @__PURE__ */ jsx(TokengateProvider, {
+      isConnected: false,
+      connectButton: /* @__PURE__ */ jsx(Button2, {
+        onClick: handleConnection,
+        children: isLoading ? /* @__PURE__ */ jsx(Spinner, {
+          style: {
+            display: "block"
+          }
+        }) : connectedWallet ? "Disconnect wallet" : "Connect Wallet"
+      }),
+      isLoading: false,
+      requirements,
+      reaction,
+      isLocked,
+      unlockingTokens
+    }), /* @__PURE__ */ jsx(XummModal, {
+      isModalOpen: modalOpen,
+      imageUrl: modalImage,
+      closeModal
+    })]
   });
 };
 const App = () => {

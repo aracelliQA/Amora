@@ -1,6 +1,11 @@
 import { createHmac } from "crypto";
 import { XummSdk } from "xumm-sdk";
 import cors from "cors";
+import * as dotenv from 'dotenv'
+dotenv.config()
+
+import * as xrpl from "xrpl";
+
 
 import { getContractAddressesFromGate } from "./api/gates.js";
 
@@ -9,6 +14,10 @@ export function configurePublicApi(app) {
   const corsOptions = {
     origin: "*",
   };
+  const xummSdk = new XummSdk(
+    process.env.XUMM_KEY,
+    process.env.XUMM_SECRET
+  );
 
   // Configure CORS to allow requests to /public from any origin
   // enables pre-flight requests
@@ -18,41 +27,26 @@ export function configurePublicApi(app) {
     const requestPayload = {
       txjson: {
         TransactionType: "SignIn",
-      }
+      },
     };
 
-    const xummSdk = new XummSdk(
-      "bbf0dceb-5c4e-4f42-b4b3-dfc7896f78fe",
-      "6b2f451d-2cd3-4791-9bc4-a574d22bf537"
-    );
     try {
       const payload = await xummSdk.payload.createAndSubscribe(
         requestPayload,
-        (event) => {
-          console.log("Payload event", event.data);
+        async (event) => {
           if (Object.keys(event.data).indexOf("signed") > -1) {
             return event.data;
           }
         }
       );
 
-      console.log("url", payload.created.refs.qr_png);
-      console.log('payload', {payload})
-      console.log("Pushed", payload.created.pushed);
-
-      const resolvedRequest = await payload.resolved;
-
-      console.log({ resolvedRequest });
-
-      if (resolvedRequest.signed == false) {
-        console.log("user not signed");
-      } else {
-        console.log("signed");
-        const result = await xummSdk.payload.get(
-          resolvedRequest.payload_uuidv4
-        );
-        console.log("user_token", result);
+      if (payload.created.pushed == false) {
+        res.status(200).send({
+          qrCode: payload.created.refs.qr_png,
+          webSocket: payload.websocket._url,
+        });
       }
+
     } catch (e) {
       console.log(e);
     }
@@ -62,7 +56,7 @@ export function configurePublicApi(app) {
     // evaluate the gate, message, and signature
     const { shopDomain, productGid, address, gateConfigurationGid } = req.body;
 
-    if (!address.address) {
+    if (!address) {
       res.status(403).send("No wallet found");
       return;
     }
@@ -75,31 +69,39 @@ export function configurePublicApi(app) {
       productGid,
     });
 
-    console.log({ requiredContractAddresses });
+    try {
+      const payloadGenerated = await xummSdk.payload.get(address);
+      const walletAddress = payloadGenerated.response.account;
 
-    // now lookup nfts
-    const unlockingTokens = await retrieveUnlockingTokens(
-      address,
-      requiredContractAddresses
-    );
+      try {
+        const unlockingTokens = await retrieveUnlockingTokens(
+          walletAddress,
+          requiredContractAddresses
+        );
 
-    if (unlockingTokens.length === 0) {
-      res.status(403).send("No unlocking tokens");
-      return;
+        if (unlockingTokens.length === 0) {
+          res.status(403).send({ message: "No unlocking tokens" });
+          return;
+        }
+
+        const payload = {
+          id: gateConfigurationGid,
+        };
+
+        const response = { gateContext: [getHmac(payload)], unlockingTokens };
+        res.status(200).send(response);
+      } catch (e) {
+        res.status(403).send("Error to retrieve tokens");
+      }
+    } catch (e) {
+      res.status(403).send("Error to connect wallet");
     }
-
-    const payload = {
-      id: gateConfigurationGid,
-    };
-
-    const response = { gateContext: [getHmac(payload)], unlockingTokens };
-    res.status(200).send(response);
   });
 }
 
 function getHmac(payload) {
   const hmacMessage = payload.id;
-  const hmac = createHmac("sha256", "secret-key");
+  const hmac = createHmac("sha256", "amora-secret-key");
   hmac.update(hmacMessage);
   const hmacDigest = hmac.digest("hex");
   return {
@@ -108,29 +110,26 @@ function getHmac(payload) {
   };
 }
 
-function retrieveUnlockingTokens(address, contractAddresses) {
+async function retrieveUnlockingTokens(address, contractAddresses) {
   // this could be some lookup against some node or a 3rd party service like Alchemy
 
-  /*async function getTokens() {
-    const client = new xrpl.Client("wss://xrplcluster.com/")
-    await client.connect()
+  const client = new xrpl.Client("wss://xrplcluster.com/");
+
+  try {
+    await client.connect();
     const nfts = await client.request({
       method: "account_nfts",
-      account: "rDnHqD11jB9HdFx3YmHTbQc8GScDd8BQfM"
-    })
-    console.log('\nNFTs:\n ' + JSON.stringify(nfts,null,2))
-    results += '\nNFTs:\n ' + JSON.stringify(nfts,null,2)
-    document.getElementById('standbyResultField').value = results
-    client.disconnect()
-  } //End of getTokens()*/
+      account: address,
+    });
 
-  return Promise.resolve([
-    {
-      name: "CryptoPunk #1719",
-      imageUrl:
-        "https://storage.cloud.google.com/shopify-blockchain-development/images/punk1719.png",
-      collectionName: "CryptoPunks",
-      collectionAddress: "0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB",
-    },
-  ]);
+    const NFTArray = nfts.result.account_nfts;
+    
+    const filteredArray = NFTArray.filter(
+      (x) => [...contractAddresses].indexOf(x) == -1
+    );
+
+    return filteredArray;
+  } catch (e) {
+    throw new Error(e);
+  }
 }

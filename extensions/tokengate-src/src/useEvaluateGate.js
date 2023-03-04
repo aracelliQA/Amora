@@ -2,7 +2,7 @@ import { useMemo, useState, useCallback } from "react";
 import { getGateContextClient } from "@shopify/gate-context-client";
 
 // Set this to the ngrok url that is generated when you run the server
-export const host = "https://b57c-45-188-121-110.sa.ngrok.io";
+export const host = "https://d9b6-2804-548-c00d-ac00-11a6-a6e3-5a16-4f03.sa.ngrok.io";
 if (host == "YOUR_NGROK_URL") {
   console.error(`
     ************************************************************
@@ -39,6 +39,7 @@ export const useEvaluateGate = () => {
   const productId = getProductId();
   const evaluateGate = useCallback(
     async (address) => {
+      console.log('Address', address)
       if (address) {
         const response = await fetch(`${host}/public/gateEvaluation`, {
           method: "POST",
