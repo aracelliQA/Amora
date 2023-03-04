@@ -85,8 +85,11 @@ export default function CreateTokengate() {
     [],
   );
 
-  const [checked, setChecked] = useState(true);
-  const handleChange = useCallback((newChecked) => setChecked(newChecked), []);
+  const [neverEndChecked, setNeverEndChecked] = useState(true);
+  const neverEndHandleChange = useCallback((newChecked) => setNeverEndChecked(newChecked), []);
+
+  const [redemptionsChecked, setRedemptionsChecked] = useState(true);
+  const redemptionsHandleChange = useCallback((newChecked) => setRedemptionsChecked(newChecked), []);
 
   const fieldsDefinition = {
     name: useField({
@@ -94,7 +97,8 @@ export default function CreateTokengate() {
       validates: (name) => !name && "Name cannot be empty",
     }),
     startDate: useField(selectedStartDate.start.toJSON().substring(0,10)),
-    endDate: useField(checked ? "" :selectedEndDate.start.toJSON().substring(0,10)),
+    endDate: useField(neverEndChecked ? "" :selectedEndDate.start.toJSON().substring(0,10)),
+    redemptionsLimit: useField(redemptionsChecked ? "" : 1),
     discountType: useField("percentage"),
     discount: useField({
       value: undefined,
@@ -110,7 +114,7 @@ export default function CreateTokengate() {
   const { fields, submit, submitting, dirty, reset, makeClean } = useForm({
     fields: fieldsDefinition,
     onSubmit: async (formData) => {
-      const { startDate, endDate, discountType, discount, name, products, segment } = formData;
+      const { startDate, endDate, redemptionsLimit, discountType, discount, name, products, segment } = formData;
 
       const productGids = products.map((product) => product.id);
 
@@ -123,6 +127,7 @@ export default function CreateTokengate() {
           name,
           startDate,
           endDate,
+          redemptionsLimit,
           discountType,
           discount,
           productGids,
@@ -219,10 +224,10 @@ export default function CreateTokengate() {
                       </Popover>
                       <Checkbox
                         label="Never end"
-                        checked={checked}
-                        onChange={handleChange}
+                        checked={neverEndChecked}
+                        onChange={neverEndHandleChange}
                       />
-                      {!checked &&
+                      {!neverEndChecked &&
                          <Popover
                          active = {popover2Active}
                          activator={
@@ -244,6 +249,20 @@ export default function CreateTokengate() {
                              allowRange={false}
                            />
                        </Popover>
+                      }
+                      <div style={{display: "flex"}}>
+                        <Checkbox
+                          label="Unlimited redemptions"
+                          checked={redemptionsChecked}
+                          onChange={redemptionsHandleChange}
+                        />
+                      </div>
+                      {!redemptionsChecked &&
+                        <TextField
+                        name="redemptionsLimit"
+                        type="number"
+                        {...fields.redemptionsLimit}
+                        />
                       }
                     </TextContainer>
                   </Card.Section>

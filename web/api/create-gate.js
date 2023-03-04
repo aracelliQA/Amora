@@ -4,7 +4,7 @@ import { myAppMetafieldNamespace, myAppId } from "./constants.js";
 import { createAutomaticDiscount } from "./create-discount.js";
 
 const CREATE_GATE_CONFIGURATION_MUTATION = `
-  mutation createGateConfiguration($name: String!, $startDate: String, $endDate: String, $requirements: String!, $reaction: String!) {
+  mutation createGateConfiguration($name: String!, $startDate: String!, $endDate: String, $redemptionsLimit: String!, $requirements: String!, $reaction: String!) {
     gateConfigurationCreate(input: {
         name: $name,
         metafields: [{
@@ -24,6 +24,12 @@ const CREATE_GATE_CONFIGURATION_MUTATION = `
           key: "endDate",
           type: "single_line_text_field",
           value: $endDate
+        },
+        {
+          namespace: "${myAppMetafieldNamespace}",
+          key: "redemptionsLimit",
+          type: "single_line_text_field",
+          value: $redemptionsLimit
         },
         {
           namespace: "${myAppMetafieldNamespace}",
@@ -142,6 +148,7 @@ export default async function createGate({
   name,
   startDate,
   endDate,
+  redemptionsLimit,
   discountType,
   discount,
   segment,
@@ -180,6 +187,7 @@ export default async function createGate({
           name,
           startDate,
           endDate,
+          redemptionsLimit,
           requirements: JSON.stringify(gateConfigurationRequirements),
           reaction: JSON.stringify(gateConfigurationReaction),
         },

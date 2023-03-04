@@ -26,6 +26,10 @@ const GATES_QUERY = `
           key: "endDate") {
             value
         }
+        redemptionsLimit: metafield(namespace: "${myAppMetafieldNamespace}",
+          key: "redemptionsLimit") {
+            value
+        }
         subjectBindings(first: $first) {
           nodes {
             id
