@@ -25,6 +25,7 @@ const _App = () => {
     margin: 24px auto 0;
     display: block;
     text-transform: uppercase;
+    text-align: center;
     cursor: pointer;
     min-width: 150px;
   `;
@@ -62,7 +63,7 @@ const _App = () => {
     if (!(socketUrl.indexOf("xumm") > -1)) {
       setIsLoading(true);
       const response = await fetch(
-        `https://46ab-45-188-121-18.sa.ngrok.io/public/signin`,
+        `https://d9b6-2804-548-c00d-ac00-11a6-a6e3-5a16-4f03.sa.ngrok.io/public/signin`,
         {
           method: "GET",
           headers: {
