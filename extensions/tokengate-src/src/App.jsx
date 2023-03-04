@@ -32,9 +32,7 @@ const _App = () => {
 
   useWebSocket(socketUrl, {
     onMessage: async (message) => {
-      console.log(message);
       const data = JSON.parse(message.data);
-      console.log({ data });
       if (data.signed) {
         setConnectedWallet(true);
         try {
@@ -80,7 +78,6 @@ const _App = () => {
       setSocketUrl(json.webSocket);
       setModalImage(json.qrCode);
       openModal();
-      console.log(json);
     } else {
       openModal();
     }

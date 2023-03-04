@@ -6,7 +6,6 @@ dotenv.config()
 
 import * as xrpl from "xrpl";
 
-console.log(process.env);
 
 import { getContractAddressesFromGate } from "./api/gates.js";
 
@@ -35,7 +34,6 @@ export function configurePublicApi(app) {
       const payload = await xummSdk.payload.createAndSubscribe(
         requestPayload,
         async (event) => {
-          console.log("Event log: ", event.data);
           if (Object.keys(event.data).indexOf("signed") > -1) {
             return event.data;
           }
@@ -49,17 +47,6 @@ export function configurePublicApi(app) {
         });
       }
 
-      /*const resolvedRequest = await payload.resolved;
-
-      if (resolvedRequest.signed == false) {
-        console.log("user not signed");
-      } else {
-        console.log("signed");
-        const result = await xummSdk.payload.get(
-          resolvedRequest.payload_uuidv4
-        );
-        console.log("user_token", result);
-      }*/
     } catch (e) {
       console.log(e);
     }
@@ -82,21 +69,15 @@ export function configurePublicApi(app) {
       productGid,
     });
 
-    console.log({ requiredContractAddresses });
-
     try {
       const payloadGenerated = await xummSdk.payload.get(address);
       const walletAddress = payloadGenerated.response.account;
-
-      console.log({ walletAddress });
 
       try {
         const unlockingTokens = await retrieveUnlockingTokens(
           walletAddress,
           requiredContractAddresses
         );
-
-        console.log({ unlockingTokens });
 
         if (unlockingTokens.length === 0) {
           res.status(403).send({ message: "No unlocking tokens" });
@@ -151,17 +132,4 @@ async function retrieveUnlockingTokens(address, contractAddresses) {
   } catch (e) {
     throw new Error(e);
   }
-
-  /*async function getTokens() {
-    const client = new xrpl.Client("wss://xrplcluster.com/")
-    await client.connect()
-    const nfts = await client.request({
-      method: "account_nfts",
-      account: "rDnHqD11jB9HdFx3YmHTbQc8GScDd8BQfM"
-    })
-    console.log('\nNFTs:\n ' + JSON.stringify(nfts,null,2))
-    results += '\nNFTs:\n ' + JSON.stringify(nfts,null,2)
-    document.getElementById('standbyResultField').value = results
-    client.disconnect()
-  } //End of getTokens()*/
 }
