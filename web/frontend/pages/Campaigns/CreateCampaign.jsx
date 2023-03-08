@@ -162,7 +162,6 @@ export default function CreateTokengate() {
 
   return (
     <Page
-      narrowWidth
       breadcrumbs={[
         {
           content: "Go back",
@@ -303,10 +302,13 @@ export default function CreateTokengate() {
                   <Card.Section title="SEGMENT">
                     <TextField
                       name="segment"
-                      helpText="Comma separated list of contract addresses"
+                      helpText="Comma separated list of NFTTokenIDs, one per line"
                       type="text"
-                      placeholder="0x123, 0x456, 0x789"
+                      placeholder="00080000847139315C8C9746B458F49FBF8E390D39DD07220000099B00000000, 
+                      00080000847139315C8C9746B458F49FBF8E390D39DD07220000099B00123456, 
+                      00080000847139315C8C9746B458F49FBF8E390D39DD07220000099B00654322"
                       {...fields.segment}
+                      multiline={4}
                       autoComplete="off"
                     />
                   </Card.Section>
