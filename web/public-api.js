@@ -125,7 +125,7 @@ async function retrieveUnlockingTokens(address, contractAddresses) {
     const NFTArray = nfts.result.account_nfts;
     
     const filteredArray = NFTArray.filter(
-      (x) => [...contractAddresses].indexOf(x) == -1
+      (x) => [...contractAddresses[0].split(',')].indexOf(x.NFTokenID) > -1
     );
 
     return filteredArray;
