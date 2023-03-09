@@ -29,13 +29,30 @@ const _App = () => {
     cursor: pointer;
     min-width: 150px;
   `;
-  useEffect(() => {}, []);
+  useEffect(async () => {
+    const checkWallet = async () => {
+      if (
+        localStorage.getItem("connectedWallet") &&
+        localStorage.getItem("connectedWallet") != "false"
+      ) {
+        try {
+          await evaluateGate(localStorage.getItem("connectedWallet"));
+          setConnectedWallet(true)
+        } catch (e) {
+          throw new Error(e);
+        }
+      }
+    };
+
+    checkWallet();
+  }, []);
 
   useWebSocket(socketUrl, {
     onMessage: async (message) => {
       const data = JSON.parse(message.data);
       if (data.signed) {
         setConnectedWallet(true);
+        localStorage.setItem("connectedWallet", data.payload_uuidv4);
         try {
           if (data.payload_uuidv4) {
             await evaluateGate(data.payload_uuidv4);
@@ -60,10 +77,32 @@ const _App = () => {
   };
 
   const handleConnection = useCallback(async () => {
-    if (!(socketUrl.indexOf("xumm") > -1)) {
+    if (
+      localStorage.getItem("connectedWallet") &&
+      localStorage.getItem("connectedWallet") != "false"
+    ) {
+      setIsLoading(true);
+      try {
+        setTimeout(async () => {
+          await evaluateGate();
+          setIsLoading(false);
+          setConnectedWallet(false);
+        }, 800);
+      } catch (e) {
+        throw new Error(e);
+      }
+      localStorage.clear();
+      localStorage.setItem("connectedWallet", "false");
+      return;
+    }
+
+    if (
+      !(socketUrl.indexOf("xumm") > -1) ||
+      localStorage.getItem("connectedWallet") == "false"
+    ) {
       setIsLoading(true);
       const response = await fetch(
-        `https://d9b6-2804-548-c00d-ac00-11a6-a6e3-5a16-4f03.sa.ngrok.io/public/signin`,
+        `https://e62e-2804-548-c00d-ac00-4c03-9bcd-3d19-ffb0.sa.ngrok.io/public/signin`,
         {
           method: "GET",
           headers: {

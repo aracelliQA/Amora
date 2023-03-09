@@ -14790,7 +14790,7 @@ function getGateContextClient(options) {
   }
   throw new Error(`Unsupported backing store: ${options.backingStore}`);
 }
-const host = "https://d9b6-2804-548-c00d-ac00-11a6-a6e3-5a16-4f03.sa.ngrok.io";
+const host = "https://e62e-2804-548-c00d-ac00-4c03-9bcd-3d19-ffb0.sa.ngrok.io";
 const gateContextClient = getGateContextClient({
   backingStore: "ajaxApi",
   shopifyGateContextGenerator: async (data) => {
@@ -14816,7 +14816,6 @@ const useEvaluateGate = () => {
   const productId = getProductId();
   const evaluateGate = react.exports.useCallback(
     async (address) => {
-      console.log("Address", address);
       if (address) {
         const response = await fetch(`${host}/public/gateEvaluation`, {
           method: "POST",
@@ -14833,11 +14832,15 @@ const useEvaluateGate = () => {
           })
         });
         const json = await response.json();
-        console.log({ json });
         setGateEvaluation(json);
-        gateContextClient.write(json.gateContext).catch((_e2) => console.error("failed to write to gate context"));
+        if (json.message == "No unlocking tokens") {
+          gateContextClient.write({}).catch((_e2) => console.error("failed to write to gate context"));
+        } else {
+          gateContextClient.write(json.gateContext).catch((_e2) => console.error("failed to write to gate context"));
+        }
       } else {
         setGateEvaluation({});
+        gateContextClient.write({}).catch((_e2) => console.error("failed to write to gate context"));
       }
     },
     [setGateEvaluation, gate]
@@ -16002,13 +16005,25 @@ const _App = () => {
     cursor: pointer;
     min-width: 150px;
   `;
-  react.exports.useEffect(() => {
+  react.exports.useEffect(async () => {
+    const checkWallet = async () => {
+      if (localStorage.getItem("connectedWallet") && localStorage.getItem("connectedWallet") != "false") {
+        try {
+          await evaluateGate(localStorage.getItem("connectedWallet"));
+          setConnectedWallet(true);
+        } catch (e2) {
+          throw new Error(e2);
+        }
+      }
+    };
+    checkWallet();
   }, []);
   useWebSocket(socketUrl, {
     onMessage: async (message) => {
       const data = JSON.parse(message.data);
       if (data.signed) {
         setConnectedWallet(true);
+        localStorage.setItem("connectedWallet", data.payload_uuidv4);
         try {
           if (data.payload_uuidv4) {
             await evaluateGate(data.payload_uuidv4);
@@ -16030,9 +16045,24 @@ const _App = () => {
     setModalOpen(false);
   };
   const handleConnection = react.exports.useCallback(async () => {
-    if (!(socketUrl.indexOf("xumm") > -1)) {
+    if (localStorage.getItem("connectedWallet") && localStorage.getItem("connectedWallet") != "false") {
       setIsLoading(true);
-      const response = await fetch(`https://d9b6-2804-548-c00d-ac00-11a6-a6e3-5a16-4f03.sa.ngrok.io/public/signin`, {
+      try {
+        setTimeout(async () => {
+          await evaluateGate();
+          setIsLoading(false);
+          setConnectedWallet(false);
+        }, 800);
+      } catch (e2) {
+        throw new Error(e2);
+      }
+      localStorage.clear();
+      localStorage.setItem("connectedWallet", "false");
+      return;
+    }
+    if (!(socketUrl.indexOf("xumm") > -1) || localStorage.getItem("connectedWallet") == "false") {
+      setIsLoading(true);
+      const response = await fetch(`https://e62e-2804-548-c00d-ac00-4c03-9bcd-3d19-ffb0.sa.ngrok.io/public/signin`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
