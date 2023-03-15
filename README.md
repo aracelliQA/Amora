@@ -17,11 +17,11 @@ Amora is a Shopify App that allows merchants to create token-gated campaings usi
 
 ### Coming soon!
 
-[ ]Token-gate campaign improvements
+- [ ]Token-gate campaign improvements
   - Choose a date to end the campaign (optional).
   - Choose a limit of redemptions (optional).
 
-[ ] Mint XLS-20 NFT.
+- [ ] Mint XLS-20 NFT.
   - Connect wallet in the APP dashboard to bring current NFT Tokens.
   - Mint/delete NFT Token directly in the APP dashboard.
 
