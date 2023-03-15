@@ -16,11 +16,13 @@ import {
   Icon,
   Popover,
   Checkbox,
+  Select,
 } from "@shopify/polaris";
 import { ContextualSaveBar, Toast } from "@shopify/app-bridge-react";
 import { useField, useForm } from "@shopify/react-form";
 import { useAuthenticatedFetch } from "../../hooks";
 import { TokengatesResourcePicker } from "../../components/TokengatesResourcePicker";
+import { TokengatesResourcePickerCollection } from "../../components/TokengatesResourcePickerCollection";
 import { CalendarMajor } from '@shopify/polaris-icons';
 
 export default function CreateTokengate() {
@@ -91,6 +93,16 @@ export default function CreateTokengate() {
   const [redemptionsChecked, setRedemptionsChecked] = useState(true);
   const redemptionsHandleChange = useCallback((newChecked) => setRedemptionsChecked(newChecked), []);
 
+  const resourceTypeOptions = [
+    {label: 'Products', value: 'products'},
+    {label: 'Collections', value: 'collections'},
+    {label: 'Entire store', value: 'entireStore'},
+  ];
+
+  const [resourceTypeSelected, setResourceTypeSelected] = useState('products');
+
+  const handleSelectChange = useCallback((value) => setResourceTypeSelected(value), []);
+
   const fieldsDefinition = {
     name: useField({
       value: undefined,
@@ -109,6 +121,7 @@ export default function CreateTokengate() {
       validates: (segment) => !segment && "Segment cannot be empty",
     }),
     products: useField([]),
+    collections: useField([]),
   };
 
   const { fields, submit, submitting, dirty, reset, makeClean } = useForm({
@@ -312,10 +325,24 @@ export default function CreateTokengate() {
                       autoComplete="off"
                     />
                   </Card.Section>
+                  <Card.Section title="APPLY TO">
+                    <Select
+                      label="Select what type of resource will be applied to this campaign"
+                      options={resourceTypeOptions}
+                      onChange={handleSelectChange}
+                      value={resourceTypeSelected}
+                    />
+                  </Card.Section>
                 </Card>
               </Layout.Section>
               <Layout.Section>
-                <TokengatesResourcePicker products={fields.products} />
+              {(() => {
+                switch (resourceTypeSelected) {
+                  case "products": return <TokengatesResourcePicker products={fields.products} />;
+                  case "collections": return <TokengatesResourcePickerCollection products={fields.collections} />;
+                  case "entireStore": return <h2>Not implemented yet, select another option please</h2>;
+                }
+              })()}
               </Layout.Section>
               <Layout.Section>
                 <PageActions
