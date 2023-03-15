@@ -17,7 +17,7 @@ Amora is a Shopify App that allows merchants to create token-gated campaings usi
 
 ### Coming soon!
 
-- [ ]Token-gate campaign improvements
+- [ ] Token-gate campaign improvements
   - Choose a date to end the campaign (optional).
   - Choose a limit of redemptions (optional).
 
@@ -49,4 +49,4 @@ The following Shopify tools complement these third-party tools to ease app devel
 ## Installing the app
 
 ### Coming soon!
-  [ ]URL to install the APP in test stores
+- [ ] URL to install the APP in test stores
