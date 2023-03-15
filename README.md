@@ -8,8 +8,8 @@ Amora is a Shopify App that allows merchants to create token-gated campaings usi
 
 - [x] Create token-gated campaigns using XLS-20 NFTTokenIds.
   - Choose the tokens that are part of the campaign.
-  - Choose the products are going to be part of the campaign.
-  - Setup a discount code for the unlocked wallets.
+  - Choose the products that are going to be part of the campaign.
+  - Setup a discount percentage or value for the unlocked wallets.
   - Create the campaign.
   - Widget in product page that shows the campaign to the customer.
   - Connect and disconnect wallet widget in the Storefront (XUMM wallet integration).
