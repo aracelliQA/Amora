@@ -1,4 +1,4 @@
-# Amora Roadman - Here's a brief roadmap the features we plan to develop in next.
+# Amora's Roadmap - Here's a brief roadmap the features we plan to develop during XRP Grant Wave 5.
 
 ## Phase 1:
   - [ ] Improvements in APP UI in Amora's Shopify App Dashboard
