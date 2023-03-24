@@ -140,7 +140,27 @@ query retrieveProducts ($queryString: String!, $first: Int!){
     }
   }
 }
+`;
 
+const PRODUCTS_QUERY_BY_COLLECTION = `
+query nodes($ids: [ID!]!) {
+  nodes(ids: $ids) {
+    ...on Collection {
+      id
+      products(first: 50) {
+        edges {
+          node {
+            id
+            gates {
+              id
+              active
+            }
+          }
+        }
+      }
+    }
+  }
+}
 `;
 
 export default async function createGate({
@@ -153,6 +173,8 @@ export default async function createGate({
   discount,
   segment,
   productGids,
+  collectionGids,
+  type,
 }) {
   const client = new shopify.api.clients.Graphql({ session });
 
@@ -200,23 +222,41 @@ export default async function createGate({
 
     createAutomaticDiscount(client, gateConfiguration);
 
-    if (productGids.length === 0) {
+    if (productGids.length === 0 && collectionGids === 0) {
       return;
     }
 
-    const retrieveProductsResponse = await client.query({
-      data: {
-        query: PRODUCTS_QUERY,
-        variables: {
-          queryString: generateProductsQueryString(productGids),
-          first: 100,
+    let products = [];
+
+    if(type === "products"){
+      const retrieveProductsResponse = await client.query({
+        data: {
+          query: PRODUCTS_QUERY,
+          variables: {
+            queryString: generateProductsQueryString(productGids),
+            first: 100,
+          },
         },
-      },
-    });
-
-    const products = retrieveProductsResponse.body.data.products.nodes;
-
-    for (const product of products) {
+      });
+      products = retrieveProductsResponse.body.data.products.nodes;
+    }else if(type === "collections"){
+      const retrieveProductsByCollectionResponse = await client.query({
+        data: {
+          query: PRODUCTS_QUERY_BY_COLLECTION,
+          variables: {
+            ids: collectionGids,
+          },
+        },
+      });
+      console.log("Query response", retrieveProductsByCollectionResponse.body.data.nodes[0].products.edges);
+      products = retrieveProductsByCollectionResponse.body.data.nodes[0].products.edges;
+    }else {
+      return;
+    }
+    
+    for (let product of products) {
+      if (type === "collections")
+        product = product.node;
       if (product.gates.length > 0) {
         const activeGateSubjectId = product.gates[0].id;
         await client.query({

@@ -122,14 +122,16 @@ export default function CreateTokengate() {
     }),
     products: useField([]),
     collections: useField([]),
+    type: useField(resourceTypeSelected),
   };
 
   const { fields, submit, submitting, dirty, reset, makeClean } = useForm({
     fields: fieldsDefinition,
     onSubmit: async (formData) => {
-      const { startDate, endDate, redemptionsLimit, discountType, discount, name, products, segment } = formData;
+      const { startDate, endDate, redemptionsLimit, discountType, discount, name, products, collections, type, segment } = formData;
 
       const productGids = products.map((product) => product.id);
+      const collectionGids = collections.map((collection) => collection.id);
 
       const response = await fetch("/api/gates", {
         method: "POST",
@@ -144,6 +146,8 @@ export default function CreateTokengate() {
           discountType,
           discount,
           productGids,
+          collectionGids,
+          type,
           segment: segment.split(","),
         }),
       });
