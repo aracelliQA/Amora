@@ -12,7 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { ResourcePicker } from "@shopify/app-bridge-react";
 import { CancelSmallMinor, ImageMajor } from "@shopify/polaris-icons";
 
-export const TokengatesResourcePicker = ({ products }) => {
+export const TokengatesResourcePickerCollection = ({ products }) => {
   const [isResourcePickerOpen, setIsResourcePickerOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -102,7 +102,7 @@ export const TokengatesResourcePicker = ({ products }) => {
     return (
       <Card.Section>
         <Stack distribution="center">
-          <Button onClick={handleTogglePicker}>Choose products</Button>
+          <Button onClick={handleTogglePicker}>Choose collections</Button>
         </Stack>
       </Card.Section>
     );
@@ -110,12 +110,12 @@ export const TokengatesResourcePicker = ({ products }) => {
 
   return (
     <Card
-      title="Set products"
+      title="Set collections"
       actions={
         products.value.length > 0
           ? [
               {
-                content: "Choose products",
+                content: "Choose collections",
                 onAction: () => setIsResourcePickerOpen(true),
               },
             ]
@@ -125,7 +125,7 @@ export const TokengatesResourcePicker = ({ products }) => {
       <Card.Section>{selectedResourcesMarkup()}</Card.Section>
 
       <ResourcePicker
-        resourceType="Product"
+        resourceType="Collection"
         open={isResourcePickerOpen}
         onCancel={handleTogglePicker}
         onSelection={handleProductSelection}
